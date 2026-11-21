@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El Protocolo E91 — Distribución Cuántica de Claves</title>
+  <style>
+    /* ==========================================================================
+       1. VARIABLES DE DISEÑO Y PALETA CUÁNTICA
+       ========================================================================== */
+    :root {
+      --bg-deep: #0B132B;
+      --bg-mid: #1C2541;
+      --bg-card: rgba(28, 37, 65, 0.74);
+      --bg-card-solid: #16203C;
+      --border-subtle: rgba(255, 255, 255, 0.12);
+      --border-strong: rgba(255, 255, 255, 0.24);
+
+      /* Paleta Semántica */
+      --alice: #00D4FF;
+      --alice-bg: rgba(0, 212, 255, 0.14);
+      --alice-border: rgba(0, 212, 255, 0.42);
+
+      --bob: #10B981;
+      --bob-bg: rgba(16, 185, 129, 0.14);
+      --bob-border: rgba(16, 185, 129, 0.42);
+
+      --eve: #F43F5E;
+      --eve-bg: rgba(244, 63, 94, 0.15);
+      --eve-border: rgba(244, 63, 94, 0.45);
+
+      --quantum: #A855F7;
+      --quantum-bg: rgba(168, 85, 247, 0.15);
+      --gold: #FBBF24;
+      --gold-bg: rgba(251, 191, 36, 0.14);
+
+      /* Tipografía */
+      --text-main: #F8FAFC;
+      --text-muted: #CBD5E1;
+      --text-dim: #94A3B8;
+
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --transition: 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ==========================================================================
+       2. RESET Y ESTRUCTURA GLOBAL (100VH SIN DESBORDAMIENTO)
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      background: radial-gradient(circle at 20% 20%, #1C2541 0%, #0B132B 65%, #070D1F 100%);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fondo decorativo sutil con rejilla cuántica */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(0, 212, 255, 0.06) 1px, transparent 1px),
+        radial-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+      background-size: 44px 44px;
+      background-position: 0 0, 22px 22px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       3. BARRA SUPERIOR DE PROGRESO Y CRONÓMETRO DE ENSAYO
+       ========================================================================== */
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 11.11%;
+      background: linear-gradient(90deg, var(--alice), var(--quantum), var(--bob));
+      transition: width 0.35s ease;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1.25rem;
+      background: rgba(11, 19, 43, 0.78);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      gap: 0.75rem;
+    }
+
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--alice);
+      box-shadow: 0 0 10px var(--alice);
+    }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .slide-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.07);
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Cronómetro 10:00 */
+    .timer-box {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(28, 37, 65, 0.9);
+      border: 1px solid var(--border-subtle);
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+    }
+
+    .timer-display {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--alice);
+      min-width: 44px;
+      text-align: center;
+    }
+
+    .timer-display.warning {
+      color: var(--gold);
+    }
+
+    .timer-display.overtime {
+      color: var(--eve);
+    }
+
+    .timer-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 0.2rem 0.45rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .timer-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* ==========================================================================
+       4. ÁREA PRINCIPAL DE DIAPOSITIVAS
+       ========================================================================== */
+    .deck-container {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(0.9rem, 2.2vh, 1.75rem) clamp(1rem, 3.5vw, 3.2rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(14px) scale(0.99);
+      transition: opacity 0.32s ease, transform 0.32s ease, visibility 0.32s;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .slide-inner {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.75rem, 1.6vh, 1.25rem);
+    }
+
+    /* Encabezados de Diapositiva */
+    .slide-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: clamp(0.72rem, 1vw, 0.82rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--alice);
+    }
+
+    .slide-title {
+      font-size: clamp(1.45rem, 2.8vw, 2.3rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text-main);
+    }
+
+    .slide-subtitle {
+      font-size: clamp(0.92rem, 1.35vw, 1.12rem);
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Tarjetas y Contenedores */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: clamp(0.9rem, 1.8vw, 1.4rem);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-alice {
+      background: linear-gradient(145deg, rgba(0, 212, 255, 0.12), rgba(28, 37, 65, 0.78));
+      border-color: var(--alice-border);
+    }
+
+    .card-bob {
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), rgba(28, 37, 65, 0.78));
+      border-color: var(--bob-border);
+    }
+
+    .card-eve {
+      background: linear-gradient(145deg, rgba(244, 63, 94, 0.14), rgba(28, 37, 65, 0.8));
+      border-color: var(--eve-border);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    /* Badges semánticos */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge-alice { background: var(--alice-bg); color: var(--alice); border: 1px solid var(--alice-border); }
+    .badge-bob   { background: var(--bob-bg); color: var(--bob); border: 1px solid var(--bob-border); }
+    .badge-eve   { background: var(--eve-bg); color: var(--eve); border: 1px solid var(--eve-border); }
+    .badge-gold  { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.4); }
+    .badge-purple { background: var(--quantum-bg); color: #D8B4FE; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+    /* Botones Interactivos */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .btn.active-alice {
+      background: var(--alice-bg);
+      border-color: var(--alice);
+      color: var(--alice);
+      box-shadow: 0 0 16px rgba(0, 212, 255, 0.25);
+    }
+
+    .btn.active-bob {
+      background: var(--bob-bg);
+      border-color: var(--bob);
+      color: var(--bob);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn.active-eve {
+      background: var(--eve-bg);
+      border-color: var(--eve);
+      color: var(--eve);
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.28);
+    }
+
+    .btn.active-primary {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(168, 85, 247, 0.25));
+      border-color: var(--alice);
+      color: #FFFFFF;
+    }
+
+    /* Cajas Matemáticas */
+    .formula-box {
+      background: rgba(11, 19, 43, 0.85);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: clamp(1.05rem, 1.9vw, 1.55rem);
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 0.02em;
+      box-shadow: inset 0 0 24px rgba(0, 212, 255, 0.08);
+    }
+
+    .c-alice { color: var(--alice); }
+    .c-bob   { color: var(--bob); }
+    .c-eve   { color: var(--eve); }
+    .c-gold  { color: var(--gold); }
+
+    /* ==========================================================================
+       5. ESTILOS ESPECÍFICOS DE DIAPOSITIVAS Y ANIMACIONES
+       ========================================================================== */
+    @keyframes pulseRing {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.12); opacity: 1; }
+    }
+
+    @keyframes dashMove {
+      to { stroke-dashoffset: -36; }
+    }
+
+    @keyframes spinCoin {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
+    }
+
+    .svg-wave {
+      stroke-dasharray: 8 6;
+      animation: dashMove 1.4s linear infinite;
+    }
+
+    .svg-pulse {
+      transform-origin: center;
+      animation: pulseRing 2.6s ease-in-out infinite;
+    }
+
+    /* Portada */
+    .hero-layout {
+      text-align: center;
+      align-items: center;
+      gap: 1.1rem;
+    }
+
+    .hero-title {
+      font-size: clamp(2.2rem, 4.8vw, 3.8rem);
+      font-weight: 900;
+      background: linear-gradient(120deg, #FFFFFF 25%, var(--alice) 65%, var(--bob) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.08;
+    }
+
+    .hook-banner {
+      display: inline-block;
+      padding: 0.65rem 1.35rem;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.14), rgba(16, 185, 129, 0.14));
+      border: 1px solid rgba(0, 212, 255, 0.35);
+      font-size: clamp(0.95rem, 1.4vw, 1.18rem);
+      font-weight: 600;
+      color: #E2E8F0;
+    }
+
+    /* Pipeline 3 pasos (Slide 2) */
+    .step-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--alice);
+    }
+
+    /* Tabla de Simulación (Slide 5) */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    table.sim-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(0.78rem, 1.05vw, 0.92rem);
+      text-align: center;
+    }
+
+    .sim-table th {
+      background: rgba(11, 19, 43, 0.9);
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 0.6rem 0.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sim-table td {
+      padding: 0.52rem 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sim-table tr.row-key {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .sim-table tr.row-test {
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    /* Termómetro CHSH (Slide 6 & 7) */
+    .meter-container {
+      position: relative;
+      padding: 1.1rem 1.2rem;
+      background: rgba(11, 19, 43, 0.8);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .meter-track {
+      position: relative;
+      height: 28px;
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-strong);
+    }
+
+    .meter-zone-classic {
+      width: 66.66%; /* 0 to 2.0 out of 3.0 */
+      background: linear-gradient(90deg, rgba(244, 63, 94, 0.45), rgba(251, 191, 36, 0.55));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #FFF;
+      border-right: 2px dashed #FFF;
+    }
+
+    .meter-zone-quantum {
+      width: 33.34%; /* 2.0 to 3.0 */
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.45), rgba(16, 185, 129, 0.65));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #FFF;
+    }
+
+    .meter-needle {
+      position: absolute;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      width: 4px;
+      background: #FFFFFF;
+      box-shadow: 0 0 12px #FFFFFF, 0 0 20px var(--alice);
+      border-radius: 4px;
+      transition: left 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.45rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Acordeón FAQ (Slide 9) */
+    .faq-item {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: rgba(11, 19, 43, 0.65);
+      overflow: hidden;
+    }
+
+    .faq-trigger {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      gap: 0.75rem;
+    }
+
+    .faq-trigger:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .faq-body {
+      max-height: 0;
+      overflow: hidden;
+      padding: 0 1rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    .faq-item.open .faq-body {
+      max-height: 180px;
+      padding: 0 1rem 0.85rem 1rem;
+    }
+
+    /* ==========================================================================
+       6. PANEL DESPLEGABLE DE NOTAS DEL ORADOR (TECLA N)
+       ========================================================================== */
+    .notes-drawer {
+      background: rgba(8, 13, 28, 0.96);
+      border-top: 2px solid var(--alice);
+      padding: 0.85rem 1.5rem;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.32s ease, opacity 0.25s ease, padding 0.32s ease;
+      flex-shrink: 0;
+    }
+
+    .notes-drawer.open {
+      max-height: 185px;
+      opacity: 1;
+      overflow-y: auto;
+    }
+
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--alice);
+    }
+
+    .notes-text {
+      font-size: 0.92rem;
+      line-height: 1.52;
+      color: #E2E8F0;
+      max-width: 1100px;
+    }
+
+    /* ==========================================================================
+       7. BARRA INFERIOR DE CONTROLES
+       ========================================================================== */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1.25rem;
+      background: rgba(11, 19, 43, 0.88);
+      border-top: 1px solid var(--border-subtle);
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      gap: 0.5rem;
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--border-strong);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .nav-btn.is-active {
+      background: var(--alice-bg);
+      border-color: var(--alice);
+      color: var(--alice);
+    }
+
+    .kbd-hint {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.08rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+    }
+
+    .dots-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .dot-btn {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.22);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dot-btn.active {
+      width: 24px;
+      border-radius: 999px;
+      background: var(--alice);
+    }
+
+    /* ==========================================================================
+       8. MODAL VISTA DE CUADRÍCULA (ÍNDICE VISUAL - TECLA G)
+       ========================================================================== */
+    .grid-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(7, 13, 31, 0.94);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s;
+      overflow-y: auto;
+    }
+
+    .grid-modal.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .grid-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto 1.25rem auto;
+    }
+
+    .slides-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .overview-card {
+      background: var(--bg-card-solid);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: left;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .overview-card:hover {
+      border-color: var(--alice);
+      transform: translateY(-2px);
+    }
+
+    .overview-card.current {
+      border-color: var(--alice);
+      box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.25);
+    }
+
+    /* Notificación discreta (Toast) */
+    .toast {
+      position: fixed;
+      bottom: 4.2rem;
+      right: 1.25rem;
+      z-index: 60;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--alice-border);
+      color: var(--text-main);
+      padding: 0.55rem 0.95rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ==========================================================================
+       9. RESPONSIVE (MÓVIL Y TABLET)
+       ========================================================================== */
+    @media (max-width: 860px) {
+      .grid-2, .grid-3, .slides-overview-grid {
+        grid-template-columns: 1fr;
+      }
+      .dots-bar, .kbd-hint, .brand-text {
+        display: none;
+      }
+      .slide {
+        justify-content: flex-start;
+        padding-top: 1rem;
+        padding-bottom: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Barra de progreso superior -->
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Barra superior con título, contador y cronómetro de 10 minutos -->
+    <header class="top-bar">
+      <div class="brand-tag">
+        <span class="brand-dot"></span>
+        <span class="brand-text">PROTOCOLO E91 · CRIPTOGRAFÍA CUÁNTICA</span>
+      </div>
+
+      <div class="top-controls">
+        <div class="timer-box" title="Cronómetro de ensayo (10 minutos)">
+          <span>⏱</span>
+          <span class="timer-display" id="timerDisplay">10:00</span>
+          <button class="timer-btn" id="timerToggleBtn" type="button" aria-label="Iniciar o pausar cronómetro">▶</button>
+          <button class="timer-btn" id="timerResetBtn" type="button" aria-label="Reiniciar cronómetro">↺</button>
+        </div>
+        <div class="slide-counter" id="slideCounter">Diapositiva 1 / 9</div>
+      </div>
+    </header>
+
+    <!-- Contenedor principal de las 9 diapositivas -->
+    <main class="deck-container" id="deckContainer">
+
+      <!-- ====================================================================
+           DIAPOSITIVA 1: PORTADA
+           ==================================================================== -->
+      <section class="slide active" data-slide="1">
+        <div class="slide-inner hero-layout">
+          <span class="badge badge-alice">INFORMACIÓN Y CRIPTOGRAFÍA CUÁNTICA</span>
+          <h1 class="hero-title">El Protocolo E91</h1>
+          <p class="slide-subtitle" style="max-width: 760px;">
+            Distribución Cuántica de Claves mediante Entrelazamiento y Desigualdades de Bell
+          </p>
+
+          <!-- Ilustración SVG animada: Fuente central + Entrelazamiento hacia Alice y Bob -->
+          <div style="width: 100%; max-width: 680px; margin: 0.35rem auto;">
+            <svg viewBox="0 0 680 175" width="100%" height="auto" aria-label="Fuente central enviando pares entrelazados a Alice y Bob">
+              <defs>
+                <radialGradient id="sourceGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#A855F7" stop-opacity="0.9"/>
+                  <stop offset="60%" stop-color="#00D4FF" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#0B132B" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+
+              <!-- Onda de entrelazamiento conectora -->
+              <path d="M 110 88 Q 175 48, 240 88 T 340 88 T 440 88 T 570 88"
+                    fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="2.5" class="svg-wave"/>
+
+              <!-- Haz hacia Alice -->
+              <line x1="340" y1="88" x2="115" y2="88" stroke="#00D4FF" stroke-width="3" class="svg-wave"/>
+              <!-- Haz hacia Bob -->
+              <line x1="340" y1="88" x2="565" y2="88" stroke="#10B981" stroke-width="3" class="svg-wave"/>
+
+              <!-- Nodo Alice (Izquierda) -->
+              <g transform="translate(95, 88)">
+                <circle r="38" fill="rgba(0, 212, 255, 0.14)" stroke="#00D4FF" stroke-width="2"/>
+                <text y="-4" text-anchor="middle" fill="#00D4FF" font-size="14" font-weight="800">ALICE</text>
+                <text y="14" text-anchor="middle" fill="#CBD5E1" font-size="10">Detector A</text>
+              </g>
+
+              <!-- Fuente Central EPR -->
+              <g transform="translate(340, 88)">
+                <circle r="52" fill="url(#sourceGlow)" class="svg-pulse"/>
+                <circle r="32" fill="#16203C" stroke="#A855F7" stroke-width="2.5"/>
+                <text y="-3" text-anchor="middle" fill="#F8FAFC" font-size="13" font-weight="800">|Ψ⁻⟩</text>
+                <text y="13" text-anchor="middle" fill="#D8B4FE" font-size="9.5">Fuente EPR</text>
+              </g>
+
+              <!-- Nodo Bob (Derecha) -->
+              <g transform="translate(585, 88)">
+                <circle r="38" fill="rgba(16, 185, 129, 0.14)" stroke="#10B981" stroke-width="2"/>
+                <text y="-4" text-anchor="middle" fill="#10B981" font-size="14" font-weight="800">BOB</text>
+                <text y="14" text-anchor="middle" fill="#CBD5E1" font-size="10">Detector B</text>
+              </g>
+
+              <!-- Fotones viajando -->
+              <circle cx="220" cy="88" r="6" fill="#00D4FF"/>
+              <circle cx="460" cy="88" r="6" fill="#10B981"/>
+            </svg>
+          </div>
+
+          <div class="hook-banner">
+            «Ciberseguridad garantizada por las leyes fundamentales de la física»
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-dim);">
+            Usa las flechas <strong>← / →</strong> para navegar · Pulsa <strong>N</strong> para abrir las notas del orador · <strong>G</strong> para el índice
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 2: EL PROBLEMA Y EL SALTO AL E91
+           ==================================================================== -->
+      <section class="slide" data-slide="2">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">01 · Contexto y Evolución</span>
+            <h2 class="slide-title">Del problema clásico al salto cuántico del E91</h2>
+            <p class="slide-subtitle">Por qué las matemáticas actuales tienen fecha de caducidad y cómo cambia la arquitectura de seguridad.</p>
+          </div>
+
+          <!-- Pipeline visual en 3 pasos -->
+          <div class="grid-3">
+            <div class="card step-card">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="step-num">1</span>
+                <strong>Criptografía Clásica (RSA)</strong>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.45;">
+                Seguridad basada en problemas difíciles (factorizar números primos gigantes). Depende de la falta de potencia de cálculo.
+              </p>
+            </div>
+            <div class="card step-card" style="border-color: var(--eve-border);">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="step-num" style="color: var(--eve);">2</span>
+                <strong class="c-eve">Amenaza Cuántica (Shor)</strong>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.45;">
+                El algoritmo de Shor factoriza números grandes en tiempo polinómico, rompiendo el cifrado asimétrico actual.
+              </p>
+            </div>
+            <div class="card step-card" style="border-color: var(--bob-border);">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="step-num" style="color: var(--bob);">3</span>
+                <strong class="c-bob">Solución Física (QKD)</strong>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.45;">
+                La privacidad se blinda con leyes físicas inquebrantables: medir altera el sistema y es imposible clonar estados cuánticos.
+              </p>
+            </div>
+          </div>
+
+          <!-- Selector Interactivo BB84 vs E91 -->
+          <div class="card" style="margin-top: 0.25rem;">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom:0.85rem;">
+              <span style="font-weight:700; font-size:0.95rem;">Comparativa de Arquitectura QKD (Selecciona protocolo):</span>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="button" class="btn" id="btnTabBB84">BB84 (Bennett & Brassard, 1984)</button>
+                <button type="button" class="btn active-primary" id="btnTabE91">E91 (Artur Ekert, 1991)</button>
+              </div>
+            </div>
+
+            <div id="protoCompareContent" class="grid-2" style="align-items:center;">
+              <!-- Se rellena dinámicamente mediante JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 3: EL INGREDIENTE (ENTRELAZAMIENTO Y PARADOJA EPR)
+           ==================================================================== -->
+      <section class="slide" data-slide="3">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">02 · Fundamentos Físicos</span>
+            <h2 class="slide-title">Entrelazamiento Cuántico y la Paradoja EPR</h2>
+            <p class="slide-subtitle">Dos partículas pierden su individualidad y se comportan como un único sistema físico a cualquier distancia.</p>
+          </div>
+
+          <!-- Ecuación del estado singlete -->
+          <div class="formula-box">
+            |Ψ⁻⟩ &nbsp;=&nbsp; <span class="c-gold">1/√2</span> · ( |0⟩<sub class="c-alice">A</sub> |1⟩<sub class="c-bob">B</sub> &nbsp;−&nbsp; |1⟩<sub class="c-alice">A</sub> |0⟩<sub class="c-bob">B</sub> )
+          </div>
+
+          <div class="grid-2">
+            <div class="card card-alice">
+              <strong class="c-alice" style="font-size:1rem;">1. Indefinición individual (50 % / 50 %)</strong>
+              <p style="font-size:0.88rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.45;">
+                Antes de medir, ni la partícula de Alice ni la de Bob tienen un valor fijado. Ambas están en superposición equiprobable de ser <strong>0</strong> o <strong>1</strong>.
+              </p>
+            </div>
+            <div class="card card-bob">
+              <strong class="c-bob" style="font-size:1rem;">2. Correlación perfecta (100 % opuestos)</strong>
+              <p style="font-size:0.88rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.45;">
+                Si Alice mide en un ángulo y obtiene <strong>0</strong>, el estado global colapsa al instante y Bob obtendrá con certeza absoluta <strong>1</strong> al medir en ese mismo ángulo.
+              </p>
+            </div>
+          </div>
+
+          <!-- Widget Interactivo de Contraste Filosófico -->
+          <div class="card">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.65rem; margin-bottom:0.75rem;">
+              <span style="font-weight:700; font-size:0.92rem;">El debate histórico: ¿Estaba el resultado escrito de antemano?</span>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                <button type="button" class="btn active-alice" id="btnEinstein">Postura de Einstein (1935): Guantes en cajas</button>
+                <button type="button" class="btn" id="btnBell">Cuántica y Bell (1964): Monedas girando</button>
+              </div>
+            </div>
+            <div id="philosophyPanel" style="font-size:0.9rem; color:var(--text-muted); line-height:1.5;">
+              <!-- Contenido dinámico -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 4: CONFIGURACIÓN DEL PROTOCOLO E91 (EXPLORADOR DE ÁNGULOS)
+           ==================================================================== -->
+      <section class="slide" data-slide="4">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">03 · Configuración Experimental</span>
+            <h2 class="slide-title">Explorador Interactivo de Ángulos en E91</h2>
+            <p class="slide-subtitle">Selecciona un ángulo de medición para Alice y otro para Bob para observar la correlación y el destino del par.</p>
+          </div>
+
+          <div class="grid-2" style="grid-template-columns: 1.25fr 1fr; align-items: stretch;">
+            <!-- Panel Izquierdo: SVG dinámico + Selectores -->
+            <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; gap:0.75rem;">
+              <svg id="angleSvg" viewBox="0 0 540 190" width="100%" height="auto" aria-label="Diagrama interactivo de ángulos de Alice y Bob">
+                <!-- Líneas de haz -->
+                <line x1="270" y1="95" x2="95" y2="95" stroke="#00D4FF" stroke-width="2.5" class="svg-wave"/>
+                <line x1="270" y1="95" x2="445" y2="95" stroke="#10B981" stroke-width="2.5" class="svg-wave"/>
+
+                <!-- Detector Alice -->
+                <g transform="translate(95, 95)">
+                  <circle r="54" fill="rgba(0, 212, 255, 0.08)" stroke="#00D4FF" stroke-width="2"/>
+                  <line x1="-45" y1="0" x2="45" y2="0" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3 3"/>
+                  <line x1="0" y1="-45" x2="0" y2="45" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3 3"/>
+                  <!-- Vector giratorio Alice -->
+                  <g id="aliceNeedleGroup" transform="rotate(0)">
+                    <line x1="0" y1="0" x2="0" y2="-46" stroke="#00D4FF" stroke-width="3.5" stroke-linecap="round"/>
+                    <polygon points="0,-52 -5,-41 5,-41" fill="#00D4FF"/>
+                  </g>
+                  <text y="72" text-anchor="middle" fill="#00D4FF" font-size="12" font-weight="800" id="aliceAngleSvgText">Alice: 0°</text>
+                </g>
+
+                <!-- Fuente Central -->
+                <g transform="translate(270, 95)">
+                  <circle r="28" fill="#16203C" stroke="#A855F7" stroke-width="2.5"/>
+                  <text y="4" text-anchor="middle" fill="#F8FAFC" font-size="12" font-weight="800">|Ψ⁻⟩</text>
+                </g>
+
+                <!-- Detector Bob -->
+                <g transform="translate(445, 95)">
+                  <circle r="54" fill="rgba(16, 185, 129, 0.08)" stroke="#10B981" stroke-width="2"/>
+                  <line x1="-45" y1="0" x2="45" y2="0" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3 3"/>
+                  <line x1="0" y1="-45" x2="0" y2="45" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3 3"/>
+                  <!-- Vector giratorio Bob -->
+                  <g id="bobNeedleGroup" transform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="-46" stroke="#10B981" stroke-width="3.5" stroke-linecap="round"/>
+                    <polygon points="0,-52 -5,-41 5,-41" fill="#10B981"/>
+                  </g>
+                  <text y="72" text-anchor="middle" fill="#10B981" font-size="12" font-weight="800" id="bobAngleSvgText">Bob: 45°</text>
+                </g>
+              </svg>
+
+              <!-- Botoneras de ángulos -->
+              <div class="grid-2" style="gap:0.65rem;">
+                <div>
+                  <div style="font-size:0.78rem; font-weight:700; color:var(--alice); margin-bottom:0.35rem;">Ángulo de Alice (aᵢ):</div>
+                  <div style="display:flex; gap:0.35rem;" id="aliceAngleBtns">
+                    <button type="button" class="btn active-alice" data-alice-angle="0">a₁ = 0°</button>
+                    <button type="button" class="btn" data-alice-angle="45">a₂ = 45°</button>
+                    <button type="button" class="btn" data-alice-angle="90">a₃ = 90°</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:0.78rem; font-weight:700; color:var(--bob); margin-bottom:0.35rem;">Ángulo de Bob (bⱼ):</div>
+                  <div style="display:flex; gap:0.35rem;" id="bobAngleBtns">
+                    <button type="button" class="btn active-bob" data-bob-angle="45">b₁ = 45°</button>
+                    <button type="button" class="btn" data-bob-angle="90">b₂ = 90°</button>
+                    <button type="button" class="btn" data-bob-angle="135">b₃ = 135°</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel Derecho: Telemetría y Clasificación en tiempo real -->
+            <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; gap:0.75rem;">
+              <div>
+                <span style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); font-weight:700;">Resultado en Tiempo Real</span>
+                <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.55rem;">
+                  <div style="display:flex; justify-content:space-between; padding:0.45rem 0.65rem; background:rgba(11,19,43,0.6); border-radius:8px;">
+                    <span style="color:var(--text-muted); font-size:0.88rem;">Diferencia angular (θₐᵦ):</span>
+                    <strong id="thetaDiffOut" style="font-family:var(--font-mono); color:#FFF;">45°</strong>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:0.45rem 0.65rem; background:rgba(11,19,43,0.6); border-radius:8px;">
+                    <span style="color:var(--text-muted); font-size:0.88rem;">Correlación E = −cos(θₐᵦ):</span>
+                    <strong id="corrValueOut" style="font-family:var(--font-mono); color:var(--alice);">−√2/2 (−0.707)</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div id="angleGroupBox" class="card card-alice" style="padding:0.85rem;">
+                <!-- Se actualiza dinámicamente -->
+              </div>
+
+              <p style="font-size:0.76rem; color:var(--text-dim); line-height:1.4;">
+                *Nota: En experimentos con polarización de fotones, los ángulos físicos se dividen a la mitad (0°, 22.5°, 45° y 22.5°, 45°, 67.5°), manteniendo idéntica matemática.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 5: PASO A PASO Y EJEMPLO PRÁCTICO (SIMULADOR DE RONDA)
+           ==================================================================== -->
+      <section class="slide" data-slide="5">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">03 · Mecánica Operativa</span>
+            <h2 class="slide-title">Paso a paso y ejemplo práctico de cribado</h2>
+          </div>
+
+          <!-- 4 Pasos Horizontales -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:0.65rem;">
+            <div class="card" style="padding:0.7rem 0.85rem;">
+              <strong class="c-alice" style="font-size:0.84rem;">1. Medición aleatoria</strong>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">Cada detector arroja <strong>+1</strong> o <strong>−1</strong> al azar.</p>
+            </div>
+            <div class="card" style="padding:0.7rem 0.85rem;">
+              <strong class="c-gold" style="font-size:0.84rem;">2. Anuncio público</strong>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">Dicen <em>SOLO qué ángulo</em> usaron, nunca el resultado.</p>
+            </div>
+            <div class="card" style="padding:0.7rem 0.85rem;">
+              <strong style="color:#D8B4FE; font-size:0.84rem;">3. Dos grupos (9 comb.)</strong>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">2 iguales → <strong>Clave</strong> · 7 distintas → <strong>Test CHSH</strong>.</p>
+            </div>
+            <div class="card" style="padding:0.7rem 0.85rem;">
+              <strong class="c-bob" style="font-size:0.84rem;">4. Bob invierte bits</strong>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">Cambia <strong>0 ↔ 1</strong> para igualar la clave de Alice.</p>
+            </div>
+          </div>
+
+          <!-- Controles de simulación y clave resultante -->
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.65rem;">
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+              <button type="button" class="btn active-primary" id="btnSimRandom">🎲 Simular nueva ronda aleatoria de 6 pares</button>
+              <button type="button" class="btn" id="btnSimReset">↺ Ejemplo original</button>
+            </div>
+            <div class="badge badge-bob" style="font-size:0.88rem; padding:0.4rem 0.85rem;">
+              Clave secreta obtenida: <span id="extractedKeyOut" style="font-family:var(--font-mono); font-size:1rem; margin-left:0.35rem;">100</span>
+            </div>
+          </div>
+
+          <!-- Tabla interactiva de 6 pares -->
+          <div class="table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>Par</th>
+                  <th>Ángulo Alice</th>
+                  <th>Ángulo Bob</th>
+                  <th>Res. Alice</th>
+                  <th>Res. Bob</th>
+                  <th>¿Coinciden?</th>
+                  <th>Destino</th>
+                  <th>Bit obtenido (Bob invierte)</th>
+                </tr>
+              </thead>
+              <tbody id="simTableBody">
+                <!-- Filas generadas por JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 6: EL DETECTOR DE ESPÍAS (DESIGUALDAD CHSH)
+           ==================================================================== -->
+      <section class="slide" data-slide="6">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">04 · Demostración de Seguridad</span>
+            <h2 class="slide-title">El detector de espías: Desigualdad CHSH</h2>
+            <p class="slide-subtitle">Los pares de ángulos no coincidentes alimentan el parámetro estadístico <strong>S</strong> que separa lo clásico de lo cuántico.</p>
+          </div>
+
+          <div class="formula-box">
+            S &nbsp;=&nbsp; E(a₁, b₁) &nbsp;−&nbsp; E(a₁, b₃) &nbsp;+&nbsp; E(a₃, b₁) &nbsp;+&nbsp; E(a₃, b₃)
+          </div>
+
+          <!-- Termómetro / Barra visual cuantitativa de 0 a 3.0 -->
+          <div class="meter-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.55rem; flex-wrap:wrap; gap:0.5rem;">
+              <span style="font-weight:700; font-size:0.9rem;">Escala del Parámetro Estadístico |S|</span>
+              <span class="badge badge-bob">Máximo Cuántico: |S| = 2√2 ≈ 2.828</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-zone-classic">ZONA CLÁSICA / ESPÍA (|S| ≤ 2)</div>
+              <div class="meter-zone-quantum">ZONA CUÁNTICA (|S| &gt; 2)</div>
+              <!-- Aguja fija en 2.828 / 3.0 = 94.26% -->
+              <div class="meter-needle" style="left: 94.26%;" title="|S| = 2.828"></div>
+            </div>
+            <div class="meter-labels">
+              <span>0.0</span>
+              <span>1.0</span>
+              <span style="color:var(--gold); font-weight:800;">2.0 (Límite Bell)</span>
+              <span style="color:var(--bob); font-weight:800;">2.828 (2√2)</span>
+              <span>3.0</span>
+            </div>
+          </div>
+
+          <!-- Botón desplegable para ver desglose matemático -->
+          <div>
+            <button type="button" class="btn" id="btnToggleChshMath">📐 Ver desglose de los 4 términos (−√2/2)</button>
+            <div id="chshMathPanel" class="card" style="display:none; margin-top:0.65rem; font-size:0.86rem; line-height:1.55;">
+              <div class="grid-2" style="gap:0.5rem; font-family:var(--font-mono);">
+                <div>• E(0°, 45°) = −cos(45°) = <strong class="c-alice">−√2/2</strong></div>
+                <div>• E(0°, 135°) = −cos(135°) = <strong class="c-bob">+√2/2</strong></div>
+                <div>• E(90°, 45°) = −cos(45°) = <strong class="c-alice">−√2/2</strong></div>
+                <div>• E(90°, 135°) = −cos(45°) = <strong class="c-alice">−√2/2</strong></div>
+              </div>
+              <div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-subtle); font-family:var(--font-mono);">
+                S = (−√2/2) − (+√2/2) + (−√2/2) + (−√2/2) = <strong>−2√2</strong> &nbsp;⇒&nbsp; <span class="c-bob"><strong>|S| = 2√2 ≈ 2.828</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 7: ¿QUÉ OCURRE SI EVE INTENTA ESPIAR? (SIMULADOR ATAQUE)
+           ==================================================================== -->
+      <section class="slide" data-slide="7">
+        <div class="slide-inner">
+          <div class="slide-header" style="flex-direction:row; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:0.75rem;">
+            <div>
+              <span class="kicker">04 · Detección de Intrusiones</span>
+              <h2 class="slide-title">¿Qué ocurre si Eve intenta espiar el canal?</h2>
+            </div>
+            <!-- Interruptor Interactivo -->
+            <div style="display:flex; gap:0.5rem;">
+              <button type="button" class="btn active-bob" id="btnCanalLimpio">🛡️ Canal Limpio (Sin espía)</button>
+              <button type="button" class="btn" id="btnActivarEve">🕵️ Activar Espía (Eve intercepta)</button>
+            </div>
+          </div>
+
+          <!-- Animación SVG del ataque -->
+          <div class="card" style="padding:0.85rem 1rem;">
+            <svg viewBox="0 0 680 155" width="100%" height="auto" aria-label="Simulación de canal limpio frente a ataque de Eve">
+              <!-- Onda cuántica entre Alice y Bob -->
+              <path id="eveEntangleArc" d="M 105 55 Q 340 -10, 575 55" fill="none" stroke="#A855F7" stroke-width="2.5" class="svg-wave"/>
+              <text id="eveEntangleLabel" x="340" y="22" text-anchor="middle" fill="#D8B4FE" font-size="11" font-weight="700">
+                Entrelazamiento Cuántico Intacto
+              </text>
+
+              <!-- Haz Fuente -> Alice -->
+              <line x1="340" y1="85" x2="115" y2="85" stroke="#00D4FF" stroke-width="3" class="svg-wave"/>
+
+              <!-- Haz Fuente -> Eve -> Bob -->
+              <line x1="340" y1="85" x2="455" y2="85" stroke="#10B981" stroke-width="3" class="svg-wave"/>
+              <line id="eveToBobBeam" x1="455" y1="85" x2="565" y2="85" stroke="#10B981" stroke-width="3" class="svg-wave"/>
+
+              <!-- Alice -->
+              <g transform="translate(95, 85)">
+                <circle r="32" fill="rgba(0, 212, 255, 0.15)" stroke="#00D4FF" stroke-width="2"/>
+                <text y="4" text-anchor="middle" fill="#00D4FF" font-size="13" font-weight="800">ALICE</text>
+              </g>
+
+              <!-- Fuente -->
+              <g transform="translate(340, 85)">
+                <circle r="28" fill="#16203C" stroke="#A855F7" stroke-width="2.5"/>
+                <text y="4" text-anchor="middle" fill="#FFF" font-size="11" font-weight="800">|Ψ⁻⟩</text>
+              </g>
+
+              <!-- Nodo EVE (en el tramo hacia Bob) -->
+              <g id="eveNodeGroup" transform="translate(455, 85)" opacity="0.28">
+                <rect x="-32" y="-24" width="64" height="48" rx="10" fill="#2A0F1A" stroke="#F43F5E" stroke-width="2.5"/>
+                <text y="-3" text-anchor="middle" fill="#F43F5E" font-size="12" font-weight="800">EVE</text>
+                <text y="12" text-anchor="middle" fill="#FDA4AF" font-size="8.5" id="eveSubLabel">En espera</text>
+              </g>
+
+              <!-- Bob -->
+              <g transform="translate(585, 85)">
+                <circle r="32" fill="rgba(16, 185, 129, 0.15)" stroke="#10B981" stroke-width="2"/>
+                <text y="4" text-anchor="middle" fill="#10B981" font-size="13" font-weight="800">BOB</text>
+              </g>
+
+              <!-- Etiqueta inferior de estado físico -->
+              <text id="eveBottomCaption" x="340" y="142" text-anchor="middle" fill="#CBD5E1" font-size="11.5" font-weight="600">
+                Ningún observador intermedio perturba los fotones en tránsito.
+              </text>
+            </svg>
+          </div>
+
+          <!-- Medidor dinámico de |S| + Explicación -->
+          <div class="grid-2" style="align-items:center;">
+            <div class="meter-container">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem;">
+                <span style="font-size:0.85rem; font-weight:700;">Valor medido de |S|:</span>
+                <strong id="eveSValueText" style="font-family:var(--font-mono); font-size:1.15rem; color:var(--bob);">|S| = 2.828</strong>
+              </div>
+              <div class="meter-track">
+                <div class="meter-zone-classic">LÍMITE CLÁSICO ≤ 2</div>
+                <div class="meter-zone-quantum">CUÁNTICO</div>
+                <div class="meter-needle" id="eveMeterNeedle" style="left: 94.26%;"></div>
+              </div>
+            </div>
+
+            <div id="eveStatusCard" class="card card-bob" style="padding:0.85rem 1rem;">
+              <strong class="c-bob" style="font-size:0.95rem;">✓ CANAL SEGURO · Entrelazamiento verificado</strong>
+              <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.45;">
+                Al cumplirse |S| ≈ 2.828 &gt; 2, Alice y Bob confirman matemáticamente que nadie midió las partículas y conservan la clave.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 8: VENTAJA CLAVE Y CASO REAL (SATÉLITE MICIUS)
+           ==================================================================== -->
+      <section class="slide" data-slide="8">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">05 · Impacto Tecnológico y Estado del Arte</span>
+            <h2 class="slide-title">Seguridad independiente del dispositivo y Satélite Micius</h2>
+          </div>
+
+          <div class="grid-2">
+            <!-- Tarjeta 1: DI-QKD -->
+            <div class="card card-alice" style="display:flex; flex-direction:column; gap:0.55rem;">
+              <span class="badge badge-alice" style="align-self:flex-start;">Ventaja frente a BB84</span>
+              <h3 style="font-size:1.12rem; font-weight:800;">1. No hace falta confiar en la fuente (DI-QKD)</h3>
+              <p style="font-size:0.88rem; color:var(--text-muted); line-height:1.5;">
+                En BB84, Alice debe confiar en que su emisor no ha sido manipulado de fábrica. En <strong>E91</strong>, la clave no nace en el emisor, sino al medir:
+              </p>
+              <ul style="font-size:0.85rem; color:var(--text-main); padding-left:1.1rem; line-height:1.5;">
+                <li>Incluso si <strong>Eve fabricara o controlara la fuente</strong>, sin entrelazamiento real no puede superar <strong>|S| ≤ 2</strong>.</li>
+                <li>El Test de Bell actúa como un juez matemático imparcial basado solo en los resultados observados.</li>
+              </ul>
+            </div>
+
+            <!-- Tarjeta 2: Satélite Micius -->
+            <div class="card card-bob" style="display:flex; flex-direction:column; gap:0.55rem;">
+              <span class="badge badge-bob" style="align-self:flex-start;">Del laboratorio al espacio</span>
+              <h3 style="font-size:1.12rem; font-weight:800;">2. Caso Real: Satélite Cuántico Micius</h3>
+              <p style="font-size:0.88rem; color:var(--text-muted); line-height:1.5;">
+                En fibra óptica terrestre los fotones se pierden a los ~100–150 km, pero en el vacío espacial viajan miles de kilómetros:
+              </p>
+              <ul style="font-size:0.85rem; color:var(--text-main); padding-left:1.1rem; line-height:1.5;">
+                <li><strong>2017:</strong> Distribución de pares entrelazados desde el espacio a dos estaciones separadas por <strong>1.200 km</strong>.</li>
+                <li><strong>2020:</strong> Clave cuántica tipo E91 a <strong>1.120 km sin confiar en el satélite</strong> (el satélite actuó solo como fuente emisora).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="padding:0.75rem 1rem; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.5rem;">
+            <span style="font-size:0.84rem; color:var(--text-muted);">
+              <strong style="color:var(--gold);">Reto actual:</strong> Generar pares entrelazados de alta calidad es más lento y costoso que emitir pulsos individuales (por eso BB84 sigue liderando en redes metropolitanas comerciales).
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DIAPOSITIVA 9: CONCLUSIONES Y DEFENSA (PREGUNTAS DEL TRIBUNAL)
+           ==================================================================== -->
+      <section class="slide" data-slide="9">
+        <div class="slide-inner">
+          <div class="slide-header">
+            <span class="kicker">06 · Cierre y Defensa</span>
+            <h2 class="slide-title">Conclusiones principales</h2>
+          </div>
+
+          <!-- Tres pilares finales -->
+          <div class="grid-3">
+            <div class="card card-alice">
+              <strong class="c-alice" style="font-size:0.98rem;">1. Seguridad física, no matemática</strong>
+              <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.45;">
+                Inmune frente a la potencia de cálculo de futuros ordenadores cuánticos y algoritmos como el de Shor.
+              </p>
+            </div>
+            <div class="card" style="border-color: rgba(168,85,247,0.45);">
+              <strong style="color:#D8B4FE; font-size:0.98rem;">2. El Test de Bell como juez</strong>
+              <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.45;">
+                La violación de la desigualdad CHSH (|S| &gt; 2) certifica la ausencia de espías sin tener que confiar siquiera en la fuente.
+              </p>
+            </div>
+            <div class="card card-bob">
+              <strong class="c-bob" style="font-size:0.98rem;">3. Pilar de la Internet Cuántica</strong>
+              <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.45;">
+                De una paradoja filosófica de 1935 a comunicaciones intercontinentales vía satélite ya demostradas en la realidad.
+              </p>
+            </div>
+          </div>
+
+          <!-- Red de seguridad: Preguntas frecuentes del tribunal -->
+          <div class="card" style="display:flex; flex-direction:column; gap:0.55rem;">
+            <span style="font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold);">
+              Red de seguridad para el turno de preguntas (Haz clic para desplegar)
+            </span>
+
+            <div class="faq-item" id="faq1">
+              <button type="button" class="faq-trigger" data-faq="faq1">
+                <span>❓ «¿Por qué Bob tiene que invertir sus bits al final del protocolo?»</span>
+                <span>▾</span>
+              </button>
+              <div class="faq-body">
+                Porque el estado singlete <strong>|Ψ⁻⟩</strong> produce resultados siempre opuestos (+1 y −1) cuando Alice y Bob miden en el mismo ángulo. Al invertir sus bits (0 ↔ 1), Bob convierte su secuencia opuesta en una copia idéntica a la clave de Alice.
+              </div>
+            </div>
+
+            <div class="faq-item" id="faq2">
+              <button type="button" class="faq-trigger" data-faq="faq2">
+                <span>❓ «¿Por qué no se usa E91 en todas partes en lugar de BB84?»</span>
+                <span>▾</span>
+              </button>
+              <div class="faq-body">
+                Porque generar pares de fotones entrelazados de alta fidelidad (mediante cristales no lineales) es tecnológicamente más complejo y ofrece tasas de bits más bajas que emitir fotones individuales en BB84, aunque E91 aporta seguridad independiente del dispositivo.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Panel desplegable de Notas del Orador (oculto por defecto, tecla N) -->
+    <aside class="notes-drawer" id="notesDrawer" aria-label="Notas del orador">
+      <div class="notes-header">
+        <span id="notesTitle">🎙️ Notas del Orador — Diapositiva 1</span>
+        <button type="button" class="timer-btn" id="closeNotesBtn">Cerrar (N)</button>
+      </div>
+      <p class="notes-text" id="notesText"></p>
+    </aside>
+
+    <!-- Barra inferior de navegación -->
+    <footer class="bottom-bar">
+      <div class="nav-group">
+        <button type="button" class="nav-btn" id="prevBtn">← Anterior</button>
+        <button type="button" class="nav-btn" id="nextBtn">Siguiente →</button>
+      </div>
+
+      <div class="dots-bar" id="dotsBar" aria-label="Selector rápido de diapositivas"></div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-btn" id="toggleNotesBtn" title="Mostrar u ocultar guion del orador">
+          🎙️ Notas <span class="kbd-hint">N</span>
+        </button>
+        <button type="button" class="nav-btn" id="toggleGridBtn" title="Ver índice visual de todas las diapositivas">
+          ⊞ Índice <span class="kbd-hint">G</span>
+        </button>
+        <button type="button" class="nav-btn" id="fullscreenBtn" title="Activar pantalla completa">
+          ⛶ <span class="kbd-hint">F</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal Vista de Cuadrícula (Índice Visual - Tecla G) -->
+  <div class="grid-modal" id="gridModal" aria-modal="true" role="dialog">
+    <div class="grid-modal-header">
+      <div>
+        <span class="kicker">Índice Visual de la Exposición</span>
+        <h2 style="font-size:1.35rem; font-weight:800;">Selecciona una diapositiva (10 minutos)</h2>
+      </div>
+      <button type="button" class="btn" id="closeGridBtn">✕ Cerrar (Esc)</button>
+    </div>
+    <div class="slides-overview-grid" id="overviewGrid"></div>
+  </div>
+
+  <!-- Notificación discreta -->
+  <div class="toast" id="toastBox"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ======================================================================
+         1. DATOS DE DIAPOSITIVAS Y NOTAS EXACTAS DEL ORADOR
+         ====================================================================== */
+      const SLIDES_DATA = [
+        {
+          num: 1,
+          time: "0:00 – 0:45",
+          title: "Portada: El Protocolo E91",
+          tag: "Presentación",
+          notes: "Preséntate y lanza la idea principal: hoy en día protegemos nuestros datos en internet con problemas matemáticos difíciles, pero en este trabajo veremos cómo el protocolo E91 permite blindar las comunicaciones usando directamente las leyes fundamentales de la física cuántica."
+        },
+        {
+          num: 2,
+          time: "0:45 – 1:45",
+          title: "El problema y el salto al E91",
+          tag: "Contexto",
+          notes: "Explica brevemente por qué los ordenadores cuánticos y el algoritmo de Shor amenazan las contraseñas actuales como RSA. Menciona que el protocolo BB84 envía fotones de Alice a Bob, pero Artur Ekert propuso en 1991 algo distinto: una fuente central envía pares de partículas entrelazadas a ambos, por lo que la clave no viaja por el canal."
+        },
+        {
+          num: 3,
+          time: "1:45 – 3:00",
+          title: "Entrelazamiento y Paradoja EPR",
+          tag: "Física",
+          notes: "Explica qué significa el estado singlete |Ψ⁻⟩ sin complicarte: antes de medir no hay valor definido, pero al medir en el mismo ángulo salen resultados 100 % opuestos. Usa la analogía de los guantes en cajas para explicar las variables ocultas de Einstein frente a las monedas girando de la mecánica cuántica, confirmadas por el Teorema de Bell."
+        },
+        {
+          num: 4,
+          time: "3:00 – 4:15",
+          title: "Configuración del Protocolo E91",
+          tag: "Ángulos",
+          notes: "Explica la mecánica experimental: la fuente central manda pares entrelazados y cada extremo gira su detector al azar entre tres ángulos posibles (0°, 45°, 90° para Alice y 45°, 90°, 135° para Bob). Recalca que cuando ambos eligen exactamente el mismo ángulo (45° o 90°), obtienen resultados opuestos al 100 %."
+        },
+        {
+          num: 5,
+          time: "4:15 – 5:45",
+          title: "Paso a paso y ejemplo práctico",
+          tag: "Cribado",
+          notes: "Cuenta cómo tras realizar miles de mediciones hablan por un canal público para decir únicamente qué ángulo usaron en cada ronda, nunca el resultado. Separan los datos en dos grupos: ángulos iguales para formar la clave secreta (donde Bob invierte sus bits para tener la misma secuencia que Alice) y ángulos distintos para detectar espías."
+        },
+        {
+          num: 6,
+          time: "5:45 – 7:15",
+          title: "El detector de espías (Desigualdad CHSH)",
+          tag: "Seguridad",
+          notes: "No hace falta hacer toda la cuenta en directo; señala la fórmula de S y explica visualmente con el termómetro que cualquier sistema clásico o con variables ocultas nunca pasa de 2, mientras que el entrelazamiento cuántico viola esa desigualdad llegando hasta 2√2 (aproximadamente 2.828)."
+        },
+        {
+          num: 7,
+          time: "7:15 – 8:15",
+          title: "¿Qué ocurre si Eve intenta espiar?",
+          tag: "Ataque",
+          notes: "Activa el interruptor de Eve en pantalla y narra el ataque paso a paso: para leer información, Eve tiene que medir el fotón, lo que rompe el entrelazamiento. Como el teorema de no-clonación le impide copiarlo, reenvía un dato clásico. Eso hace que S caiga por debajo de 2 y Alice y Bob descarten la clave al instante."
+        },
+        {
+          num: 8,
+          time: "8:15 – 9:15",
+          title: "Ventaja clave y Satélite Micius",
+          tag: "Aplicaciones",
+          notes: "Destaca por qué E91 supera conceptualmente a BB84: como la clave nace al medir, no hace falta confiar en el fabricante de la fuente emisora; aunque el espía fabricara la fuente, la prueba de Bell lo delataría. Cita el experimento real del satélite chino Micius comunicando dos estaciones a 1.120 km en 2020."
+        },
+        {
+          num: 9,
+          time: "9:15 – 10:00",
+          title: "Conclusiones y Defensa",
+          tag: "Cierre",
+          notes: "Resume en tres frases claras lo que has demostrado: seguridad garantizada por la física, el test de Bell como juez matemático imparcial y base de la futura Internet Cuántica. Da paso tranquilamente al turno de preguntas del tribunal."
+        }
+      ];
+
+      /* ======================================================================
+         2. NAVEGACIÓN DE DIAPOSITIVAS, TECLADO Y GESTOS TÁCTILES
+         ====================================================================== */
+      const totalSlides = SLIDES_DATA.length;
+      let currentSlide = 1;
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const progressFill = document.getElementById("progressFill");
+      const slideCounter = document.getElementById("slideCounter");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const dotsBar = document.getElementById("dotsBar");
+      const notesDrawer = document.getElementById("notesDrawer");
+      const notesTitle = document.getElementById("notesTitle");
+      const notesText = document.getElementById("notesText");
+      const toggleNotesBtn = document.getElementById("toggleNotesBtn");
+      const gridModal = document.getElementById("gridModal");
+      const overviewGrid = document.getElementById("overviewGrid");
+
+      function showToast(msg) {
+        const toast = document.getElementById("toastBox");
+        toast.textContent = msg;
+        toast.classList.add("show");
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => toast.classList.remove("show"), 2600);
+      }
+
+      // Generar puntos inferiores y tarjetas del índice visual
+      SLIDES_DATA.forEach((item) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "dot-btn" + (item.num === 1 ? " active" : "");
+        dot.title = `${item.num}. ${item.title}`;
+        dot.setAttribute("aria-label", `Ir a diapositiva ${item.num}`);
+        dot.addEventListener("click", () => goToSlide(item.num));
+        dotsBar.appendChild(dot);
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "overview-card" + (item.num === 1 ? " current" : "");
+        card.dataset.overviewNum = item.num;
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="badge badge-alice">Diapositiva ${item.num}</span>
+            <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim);">${item.time}</span>
+          </div>
+          <strong style="font-size:0.98rem; margin-top:0.2rem;">${item.title}</strong>
+          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+            ${item.notes}
+          </p>
+        `;
+        card.addEventListener("click", () => {
+          goToSlide(item.num);
+          gridModal.classList.remove("open");
+        });
+        overviewGrid.appendChild(card);
+      });
+
+      function goToSlide(num) {
+        if (num < 1 || num > totalSlides) return;
+        currentSlide = num;
+
+        slides.forEach((s) => {
+          s.classList.toggle("active", Number(s.dataset.slide) === currentSlide);
+        });
+
+        const pct = (currentSlide / totalSlides) * 100;
+        progressFill.style.width = `${pct}%`;
+        slideCounter.textContent = `Diapositiva ${currentSlide} / ${totalSlides}`;
+
+        prevBtn.disabled = currentSlide === 1;
+        nextBtn.disabled = currentSlide === totalSlides;
+
+        // Actualizar puntos
+        Array.from(dotsBar.children).forEach((dot, idx) => {
+          dot.classList.toggle("active", idx + 1 === currentSlide);
+        });
+
+        // Actualizar tarjeta activa en el índice
+        Array.from(overviewGrid.children).forEach((c) => {
+          c.classList.toggle("current", Number(c.dataset.overviewNum) === currentSlide);
+        });
+
+        // Actualizar notas del orador
+        const data = SLIDES_DATA[currentSlide - 1];
+        notesTitle.textContent = `🎙️ Notas del Orador — Diapositiva ${data.num} (${data.time})`;
+        notesText.textContent = data.notes;
+
+        // Sincronizar hash en URL para compartir enlace directo en GitHub Pages
+        if (history.replaceState) {
+          history.replaceState(null, "", `#slide-${currentSlide}`);
+        }
+      }
+
+      prevBtn.addEventListener("click", () => goToSlide(currentSlide - 1));
+      nextBtn.addEventListener("click", () => goToSlide(currentSlide + 1));
+
+      function toggleNotes() {
+        const isOpen = notesDrawer.classList.toggle("open");
+        toggleNotesBtn.classList.toggle("is-active", isOpen);
+      }
+
+      toggleNotesBtn.addEventListener("click", toggleNotes);
+      document.getElementById("closeNotesBtn").addEventListener("click", toggleNotes);
+
+      document.getElementById("toggleGridBtn").addEventListener("click", () => {
+        gridModal.classList.toggle("open");
+      });
+      document.getElementById("closeGridBtn").addEventListener("click", () => {
+        gridModal.classList.remove("open");
+      });
+
+      // Pantalla completa
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {
+              showToast("Pantalla completa bloqueada por el navegador o vista previa.");
+            });
+          }
+        } else if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      document.getElementById("fullscreenBtn").addEventListener("click", toggleFullscreen);
+
+      // Atajos de teclado
+      document.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+        if (e.key === "Escape") {
+          if (gridModal.classList.contains("open")) {
+            gridModal.classList.remove("open");
+          } else if (notesDrawer.classList.contains("open")) {
+            toggleNotes();
+          }
+          return;
+        }
+
+        if (gridModal.classList.contains("open")) return;
+
+        if (e.key === "ArrowRight" || (e.key === " " && e.target.tagName !== "BUTTON")) {
+          e.preventDefault();
+          goToSlide(currentSlide + 1);
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          goToSlide(currentSlide - 1);
+        } else if (e.key === "n" || e.key === "N") {
+          toggleNotes();
+        } else if (e.key === "g" || e.key === "G") {
+          gridModal.classList.toggle("open");
+        } else if (e.key === "f" || e.key === "F") {
+          toggleFullscreen();
+        }
+      });
+
+      // Gestos táctiles (swipe horizontal en móvil/tablet)
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const deckContainer = document.getElementById("deckContainer");
+      deckContainer.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      deckContainer.addEventListener("touchend", (e) => {
+        const dx = e.changedTouches[0].screenX - touchStartX;
+        const dy = e.changedTouches[0].screenY - touchStartY;
+        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          if (dx < 0) goToSlide(currentSlide + 1);
+          else goToSlide(currentSlide - 1);
+        }
+      }, { passive: true });
+
+      /* ======================================================================
+         3. CRONÓMETRO DE ENSAYO DE 10 MINUTOS
+         ====================================================================== */
+      let timerSeconds = 600; // 10:00
+      let timerInterval = null;
+      const timerDisplay = document.getElementById("timerDisplay");
+      const timerToggleBtn = document.getElementById("timerToggleBtn");
+
+      function renderTimer() {
+        const abs = Math.abs(timerSeconds);
+        const mins = String(Math.floor(abs / 60)).padStart(2, "0");
+        const secs = String(abs % 60).padStart(2, "0");
+        timerDisplay.textContent = (timerSeconds < 0 ? "-" : "") + `${mins}:${secs}`;
+        timerDisplay.classList.toggle("warning", timerSeconds <= 60 && timerSeconds >= 0);
+        timerDisplay.classList.toggle("overtime", timerSeconds < 0);
+      }
+
+      timerToggleBtn.addEventListener("click", () => {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          timerToggleBtn.textContent = "▶";
+        } else {
+          timerToggleBtn.textContent = "⏸";
+          timerInterval = setInterval(() => {
+            timerSeconds -= 1;
+            renderTimer();
+          }, 1000);
+        }
+      });
+
+      document.getElementById("timerResetBtn").addEventListener("click", () => {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerSeconds = 600;
+        timerToggleBtn.textContent = "▶";
+        renderTimer();
+      });
+
+      /* ======================================================================
+         4. WIDGET DIAPOSITIVA 2: COMPARATIVA BB84 VS E91
+         ====================================================================== */
+      const btnTabBB84 = document.getElementById("btnTabBB84");
+      const btnTabE91 = document.getElementById("btnTabE91");
+      const protoCompareContent = document.getElementById("protoCompareContent");
+
+      function renderProtoTab(mode) {
+        btnTabBB84.classList.toggle("active-primary", mode === "bb84");
+        btnTabE91.classList.toggle("active-primary", mode === "e91");
+
+        if (mode === "bb84") {
+          protoCompareContent.innerHTML = `
+            <div>
+              <span class="badge badge-alice" style="margin-bottom:0.45rem;">Envío Unidireccional</span>
+              <h3 style="font-size:1.05rem; margin-bottom:0.4rem;">Protocolo BB84 (Fotones individuales)</h3>
+              <ul style="font-size:0.86rem; color:var(--text-muted); padding-left:1.1rem; line-height:1.55;">
+                <li><strong>Alice prepara y envía</strong> fotones polarizados hacia Bob.</li>
+                <li>La clave viaja codificada en los fotones a través del canal.</li>
+                <li>Detecta a Eve comparando una muestra de bits (tasa de error QBER).</li>
+                <li><strong>Requiere confiar</strong> en que el emisor de Alice no fue manipulado.</li>
+              </ul>
+            </div>
+            <div style="background:rgba(11,19,43,0.7); border-radius:12px; padding:0.75rem;">
+              <svg viewBox="0 0 380 110" width="100%" height="auto">
+                <line x1="85" y1="55" x2="295" y2="55" stroke="#00D4FF" stroke-width="3" class="svg-wave"/>
+                <polygon points="295,55 283,49 283,61" fill="#00D4FF"/>
+                <circle cx="55" cy="55" r="28" fill="rgba(0,212,255,0.16)" stroke="#00D4FF" stroke-width="2"/>
+                <text x="55" y="59" text-anchor="middle" fill="#00D4FF" font-size="11" font-weight="800">ALICE</text>
+                <circle cx="325" cy="55" r="28" fill="rgba(16,185,129,0.16)" stroke="#10B981" stroke-width="2"/>
+                <text x="325" y="59" text-anchor="middle" fill="#10B981" font-size="11" font-weight="800">BOB</text>
+                <text x="190" y="38" text-anchor="middle" fill="#CBD5E1" font-size="10">Fotones individuales →</text>
+              </svg>
+            </div>
+          `;
+        } else {
+          protoCompareContent.innerHTML = `
+            <div>
+              <span class="badge badge-bob" style="margin-bottom:0.45rem;">Entrelazamiento Cuántico</span>
+              <h3 style="font-size:1.05rem; margin-bottom:0.4rem;">Protocolo E91 (Pares entrelazados |Ψ⁻⟩)</h3>
+              <ul style="font-size:0.86rem; color:var(--text-muted); padding-left:1.1rem; line-height:1.55;">
+                <li>Una <strong>fuente central</strong> emite pares entrelazados hacia Alice y Bob.</li>
+                <li><strong>La clave no viaja por el canal:</strong> nace simultáneamente al medir.</li>
+                <li>Detecta a Eve mediante la <strong>desigualdad CHSH (Teorema de Bell)</strong>.</li>
+                <li><strong>No requiere confiar en la fuente</strong> emisora de partículas.</li>
+              </ul>
+            </div>
+            <div style="background:rgba(11,19,43,0.7); border-radius:12px; padding:0.75rem;">
+              <svg viewBox="0 0 380 110" width="100%" height="auto">
+                <line x1="190" y1="55" x2="85" y2="55" stroke="#00D4FF" stroke-width="3" class="svg-wave"/>
+                <line x1="190" y1="55" x2="295" y2="55" stroke="#10B981" stroke-width="3" class="svg-wave"/>
+                <circle cx="55" cy="55" r="26" fill="rgba(0,212,255,0.16)" stroke="#00D4FF" stroke-width="2"/>
+                <text x="55" y="59" text-anchor="middle" fill="#00D4FF" font-size="11" font-weight="800">ALICE</text>
+                <circle cx="190" cy="55" r="24" fill="#16203C" stroke="#A855F7" stroke-width="2.5"/>
+                <text x="190" y="59" text-anchor="middle" fill="#FFF" font-size="10.5" font-weight="800">|Ψ⁻⟩</text>
+                <circle cx="325" cy="55" r="26" fill="rgba(16,185,129,0.16)" stroke="#10B981" stroke-width="2"/>
+                <text x="325" y="59" text-anchor="middle" fill="#10B981" font-size="11" font-weight="800">BOB</text>
+                <text x="190" y="98" text-anchor="middle" fill="#D8B4FE" font-size="10">Sin envío de clave por el canal</text>
+              </svg>
+            </div>
+          `;
+        }
+      }
+
+      btnTabBB84.addEventListener("click", () => renderProtoTab("bb84"));
+      btnTabE91.addEventListener("click", () => renderProtoTab("e91"));
+      renderProtoTab("e91");
+
+      /* ======================================================================
+         5. WIDGET DIAPOSITIVA 3: CONTRASTE EINSTEIN VS BELL
+         ====================================================================== */
+      const btnEinstein = document.getElementById("btnEinstein");
+      const btnBell = document.getElementById("btnBell");
+      const philosophyPanel = document.getElementById("philosophyPanel");
+
+      function renderPhilosophy(view) {
+        btnEinstein.classList.toggle("active-alice", view === "einstein");
+        btnBell.classList.toggle("active-bob", view === "bell");
+
+        if (view === "einstein") {
+          philosophyPanel.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.85rem;">
+              <div style="font-size:2rem;">🧤📦</div>
+              <div>
+                <strong class="c-alice">Realismo Local y Variables Ocultas (Einstein, Podolsky y Rosen):</strong>
+                <p style="margin-top:0.2rem;">
+                  Como meter un guante izquierdo en una caja y el derecho en otra: al abrir una sabemos qué hay en la otra porque <strong>el resultado ya estaba predeterminado desde el origen</strong>. Einstein rechazaba cualquier «acción fantasmal a distancia».
+                </p>
+              </div>
+            </div>
+          `;
+        } else {
+          philosophyPanel.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.85rem;">
+              <div style="font-size:2rem; display:inline-block; animation: spinCoin 3s linear infinite;">🪙</div>
+              <div>
+                <strong class="c-bob">Mecánica Cuántica y Teorema de Bell (1964):</strong>
+                <p style="margin-top:0.2rem;">
+                  Las partículas son como monedas girando en el aire cuyo valor <strong>no existe hasta que alguien las mide</strong>. Bell demostró que midiendo en ángulos inclinados las correlaciones cuánticas superan cualquier límite clásico, algo confirmado en laboratorio y aprovechado por Ekert en 1991.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      btnEinstein.addEventListener("click", () => renderPhilosophy("einstein"));
+      btnBell.addEventListener("click", () => renderPhilosophy("bell"));
+      renderPhilosophy("einstein");
+
+      /* ======================================================================
+         6. WIDGET DIAPOSITIVA 4: EXPLORADOR INTERACTIVO DE ÁNGULOS
+         ====================================================================== */
+      let selectedAliceAngle = 0;
+      let selectedBobAngle = 45;
+
+      const aliceNeedleGroup = document.getElementById("aliceNeedleGroup");
+      const bobNeedleGroup = document.getElementById("bobNeedleGroup");
+      const aliceAngleSvgText = document.getElementById("aliceAngleSvgText");
+      const bobAngleSvgText = document.getElementById("bobAngleSvgText");
+      const thetaDiffOut = document.getElementById("thetaDiffOut");
+      const corrValueOut = document.getElementById("corrValueOut");
+      const angleGroupBox = document.getElementById("angleGroupBox");
+
+      function formatExactCorrelation(diffDeg) {
+        if (diffDeg === 0) return "−1  (−1.000)";
+        if (diffDeg === 45) return "−√2/2  (−0.707)";
+        if (diffDeg === 90) return "0  (0.000)";
+        if (diffDeg === 135) return "+√2/2  (+0.707)";
+        return (-Math.cos((diffDeg * Math.PI) / 180)).toFixed(3);
+      }
+
+      function updateAngleExplorer() {
+        aliceNeedleGroup.setAttribute("transform", `rotate(${selectedAliceAngle})`);
+        bobNeedleGroup.setAttribute("transform", `rotate(${selectedBobAngle})`);
+        aliceAngleSvgText.textContent = `Alice: ${selectedAliceAngle}°`;
+        bobAngleSvgText.textContent = `Bob: ${selectedBobAngle}°`;
+
+        const diff = Math.abs(selectedAliceAngle - selectedBobAngle);
+        thetaDiffOut.textContent = `${diff}°`;
+        corrValueOut.textContent = formatExactCorrelation(diff);
+
+        // Actualizar estilos de botones
+        document.querySelectorAll("[data-alice-angle]").forEach((btn) => {
+          btn.classList.toggle("active-alice", Number(btn.dataset.aliceAngle) === selectedAliceAngle);
+        });
+        document.querySelectorAll("[data-bob-angle]").forEach((btn) => {
+          btn.classList.toggle("active-bob", Number(btn.dataset.bobAngle) === selectedBobAngle);
+        });
+
+        // Clasificación Grupo 1 vs Grupo 2
+        if (diff === 0) {
+          angleGroupBox.className = "card card-bob";
+          angleGroupBox.innerHTML = `
+            <span class="badge badge-bob" style="margin-bottom:0.35rem;">GRUPO 1 · CLAVE SECRETA</span>
+            <p style="font-size:0.85rem; color:var(--text-main); line-height:1.45;">
+              <strong>Ángulos coincidentes (${selectedAliceAngle}° y ${selectedBobAngle}°):</strong> Los resultados son 100 % opuestos (+1/−1). Bob invierte su bit y ambos obtienen exactamente el mismo bit secreto.
+            </p>
+          `;
+        } else if (selectedAliceAngle === 45 && selectedBobAngle === 135) {
+          angleGroupBox.className = "card";
+          angleGroupBox.innerHTML = `
+            <span class="badge badge-purple" style="margin-bottom:0.35rem;">GRUPO 2 · ÁNGULOS DISTINTOS</span>
+            <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.45;">
+              <strong>No se usa para la clave:</strong> Esta pareja (45°, 135°) no entra en los 4 términos de la fórmula CHSH estándar, por lo que simplemente se descarta tras el anuncio público.
+            </p>
+          `;
+        } else {
+          angleGroupBox.className = "card card-alice";
+          angleGroupBox.innerHTML = `
+            <span class="badge badge-alice" style="margin-bottom:0.35rem;">GRUPO 2 · TEST DE SEGURIDAD CHSH</span>
+            <p style="font-size:0.85rem; color:var(--text-main); line-height:1.45;">
+              <strong>Ángulos distintos (${selectedAliceAngle}° y ${selectedBobAngle}°):</strong> Hacen públicos los resultados (+1 o −1) para calcular <strong>E(${selectedAliceAngle}°, ${selectedBobAngle}°)</strong> y verificar la desigualdad de Bell.
+            </p>
+          `;
+        }
+      }
+
+      document.querySelectorAll("[data-alice-angle]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedAliceAngle = Number(btn.dataset.aliceAngle);
+          updateAngleExplorer();
+        });
+      });
+
+      document.querySelectorAll("[data-bob-angle]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedBobAngle = Number(btn.dataset.bobAngle);
+          updateAngleExplorer();
+        });
+      });
+
+      updateAngleExplorer();
+
+      /* ======================================================================
+         7. WIDGET DIAPOSITIVA 5: SIMULADOR DE RONDA DE 6 PARES
+         ====================================================================== */
+      const CANONICAL_PAIRS = [
+        { a: 0,  b: 45,  resA: +1, resB: -1 },
+        { a: 45, b: 45,  resA: +1, resB: -1 },
+        { a: 90, b: 135, resA: -1, resB: -1 },
+        { a: 90, b: 90,  resA: -1, resB: +1 },
+        { a: 45, b: 135, resA: +1, resB: +1 },
+        { a: 45, b: 45,  resA: -1, resB: +1 }
+      ];
+
+      const simTableBody = document.getElementById("simTableBody");
+      const extractedKeyOut = document.getElementById("extractedKeyOut");
+
+      function fmtSign(v) {
+        return v > 0 ? "+1" : "−1";
+      }
+
+      function renderSimTable(pairs) {
+        simTableBody.innerHTML = "";
+        let keyBits = [];
+
+        pairs.forEach((p, idx) => {
+          const match = p.a === p.b;
+          const isChshTerm = !match && !(p.a === 45 && p.b === 135);
+          const tr = document.createElement("tr");
+          tr.className = match ? "row-key" : "row-test";
+
+          let destHtml = "";
+          let bitHtml = "";
+
+          if (match) {
+            const bitA = p.resA === 1 ? "1" : "0";
+            const bitBInv = p.resB === 1 ? "0" : "1";
+            keyBits.push(bitA);
+            destHtml = `<span class="badge badge-bob">Clave secreta</span>`;
+            bitHtml = `Alice: <strong>${bitA}</strong> / Bob: ${fmtSign(p.resB)} → <strong class="c-bob">${bitBInv}</strong>`;
+          } else if (isChshTerm) {
+            destHtml = `<span class="badge badge-alice">Test Bell (CHSH)</span>`;
+            bitHtml = `<span style="color:var(--text-dim); font-style:italic;">No se usa para clave</span>`;
+          } else {
+            destHtml = `<span class="badge badge-purple">Test Bell (CHSH)</span>`;
+            bitHtml = `<span style="color:var(--text-dim); font-style:italic;">Descartado (no entra en CHSH)</span>`;
+          }
+
+          tr.innerHTML = `
+            <td><strong>${idx + 1}</strong></td>
+            <td class="c-alice"><strong>${p.a}°</strong></td>
+            <td class="c-bob"><strong>${p.b}°</strong></td>
+            <td>${fmtSign(p.resA)}</td>
+            <td>${fmtSign(p.resB)}</td>
+            <td>${match ? "<strong class='c-bob'>Sí</strong>" : "No"}</td>
+            <td>${destHtml}</td>
+            <td>${bitHtml}</td>
+          `;
+          simTableBody.appendChild(tr);
+        });
+
+        extractedKeyOut.textContent = keyBits.length > 0 ? keyBits.join("") : "(ningún ángulo coincidió)";
+      }
+
+      function generateQuantumRound() {
+        const aliceAngles = [0, 45, 90];
+        const bobAngles = [45, 90, 135];
+        const generated = [];
+
+        for (let i = 0; i < 6; i++) {
+          const a = aliceAngles[Math.floor(Math.random() * 3)];
+          const b = bobAngles[Math.floor(Math.random() * 3)];
+          const resA = Math.random() < 0.5 ? 1 : -1;
+          const diffRad = (Math.abs(a - b) * Math.PI) / 180;
+          // Para estado singlete |Ψ⁻⟩: P(opuestos) = cos²(θ/2)
+          const probOpposite = Math.pow(Math.cos(diffRad / 2), 2);
+          const resB = Math.random() < probOpposite ? -resA : resA;
+          generated.push({ a, b, resA, resB });
+        }
+        renderSimTable(generated);
+      }
+
+      document.getElementById("btnSimRandom").addEventListener("click", generateQuantumRound);
+      document.getElementById("btnSimReset").addEventListener("click", () => renderSimTable(CANONICAL_PAIRS));
+      renderSimTable(CANONICAL_PAIRS);
+
+      /* ======================================================================
+         8. WIDGET DIAPOSITIVA 6: DESGLOSE CHSH
+         ====================================================================== */
+      const btnToggleChshMath = document.getElementById("btnToggleChshMath");
+      const chshMathPanel = document.getElementById("chshMathPanel");
+      btnToggleChshMath.addEventListener("click", () => {
+        const visible = chshMathPanel.style.display === "block";
+        chshMathPanel.style.display = visible ? "none" : "block";
+        btnToggleChshMath.classList.toggle("active-primary", !visible);
+      });
+
+      /* ======================================================================
+         9. WIDGET DIAPOSITIVA 7: SIMULADOR DE ATAQUE DE EVE
+         ====================================================================== */
+      const btnCanalLimpio = document.getElementById("btnCanalLimpio");
+      const btnActivarEve = document.getElementById("btnActivarEve");
+      const eveEntangleArc = document.getElementById("eveEntangleArc");
+      const eveEntangleLabel = document.getElementById("eveEntangleLabel");
+      const eveToBobBeam = document.getElementById("eveToBobBeam");
+      const eveNodeGroup = document.getElementById("eveNodeGroup");
+      const eveSubLabel = document.getElementById("eveSubLabel");
+      const eveBottomCaption = document.getElementById("eveBottomCaption");
+      const eveSValueText = document.getElementById("eveSValueText");
+      const eveMeterNeedle = document.getElementById("eveMeterNeedle");
+      const eveStatusCard = document.getElementById("eveStatusCard");
+
+      function setEveAttack(active) {
+        btnCanalLimpio.classList.toggle("active-bob", !active);
+        btnActivarEve.classList.toggle("active-eve", active);
+
+        if (!active) {
+          eveEntangleArc.setAttribute("stroke", "#A855F7");
+          eveEntangleArc.setAttribute("stroke-dasharray", "8 6");
+          eveEntangleLabel.textContent = "Entrelazamiento Cuántico Intacto";
+          eveEntangleLabel.setAttribute("fill", "#D8B4FE");
+
+          eveToBobBeam.setAttribute("stroke", "#10B981");
+          eveNodeGroup.setAttribute("opacity", "0.28");
+          eveSubLabel.textContent = "En espera";
+
+          eveBottomCaption.textContent = "Ningún observador intermedio perturba los fotones en tránsito.";
+          eveBottomCaption.setAttribute("fill", "#CBD5E1");
+
+          eveSValueText.textContent = "|S| = 2.828";
+          eveSValueText.style.color = "var(--bob)";
+          eveMeterNeedle.style.left = "94.26%"; // 2.828 / 3.0
+
+          eveStatusCard.className = "card card-bob";
+          eveStatusCard.innerHTML = `
+            <strong class="c-bob" style="font-size:0.95rem;">✓ CANAL SEGURO · Entrelazamiento verificado</strong>
+            <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.45;">
+              Al cumplirse |S| ≈ 2.828 &gt; 2, Alice y Bob confirman matemáticamente que nadie midió las partículas y conservan la clave.
+            </p>
+          `;
+        } else {
+          eveEntangleArc.setAttribute("stroke", "#F43F5E");
+          eveEntangleArc.setAttribute("stroke-dasharray", "4 10");
+          eveEntangleLabel.textContent = "✖ ENLACE ROTO · Teorema de No-Clonación";
+          eveEntangleLabel.setAttribute("fill", "#F43F5E");
+
+          eveToBobBeam.setAttribute("stroke", "#F43F5E");
+          eveNodeGroup.setAttribute("opacity", "1");
+          eveSubLabel.textContent = "Mide y reenvía";
+
+          eveBottomCaption.textContent = "Eve mide el fotón, colapsa el estado cuántico y reenvía un dato clásico a Bob.";
+          eveBottomCaption.setAttribute("fill", "#FDA4AF");
+
+          eveSValueText.textContent = "|S| = 1.414 ≤ 2";
+          eveSValueText.style.color = "var(--eve)";
+          eveMeterNeedle.style.left = "47.13%"; // 1.414 / 3.0
+
+          eveStatusCard.className = "card card-eve";
+          eveStatusCard.innerHTML = `
+            <strong class="c-eve" style="font-size:0.95rem;">🚨 ¡ALARMA DE ESPIONAJE! Clave descartada</strong>
+            <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.45;">
+              Sin entrelazamiento real, |S| cae dentro del límite clásico (√2 ≈ 1.414 ≤ 2). Eve queda delatada al instante y se aborta la clave.
+            </p>
+          `;
+        }
+      }
+
+      btnCanalLimpio.addEventListener("click", () => setEveAttack(false));
+      btnActivarEve.addEventListener("click", () => setEveAttack(true));
+
+      /* ======================================================================
+         10. ACORDEÓN DE PREGUNTAS FRECUENTES (DIAPOSITIVA 9)
+         ====================================================================== */
+      document.querySelectorAll("[data-faq]").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const item = document.getElementById(trigger.dataset.faq);
+          item.classList.toggle("open");
+        });
+      });
+
+      /* ======================================================================
+         11. INICIALIZACIÓN DESDE HASH URL SI EXISTE
+         ====================================================================== */
+      const hashMatch = window.location.hash.match(/^#slide-(\d+)$/);
+      if (hashMatch) {
+        const target = Number(hashMatch[1]);
+        if (target >= 1 && target <= totalSlides) {
+          goToSlide(target);
+        } else {
+          goToSlide(1);
+        }
+      } else {
+        goToSlide(1);
+      }
+    })();
+  </script>
+</body>
+</html>
