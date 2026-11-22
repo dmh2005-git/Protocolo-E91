@@ -357,6 +357,11 @@
       100% { transform: rotateY(360deg); }
     }
 
+    @keyframes coinHover {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+
     .svg-wave {
       stroke-dasharray: 8 6;
       animation: dashMove 1.4s linear infinite;
@@ -644,76 +649,97 @@
            DIAPOSITIVA 1: PORTADA
            ==================================================================== -->
       <section class="slide active" data-slide="1">
-        <div class="slide-inner hero-layout">
+        <div class="slide-inner hero-layout" style="gap: 0.55rem;">
           <span class="badge badge-alice">INFORMACIÓN Y CRIPTOGRAFÍA CUÁNTICA</span>
-          <h1 class="hero-title">El Protocolo E91</h1>
-          <p class="slide-subtitle" style="max-width: 760px;">
+          <h1 class="hero-title" style="font-size: clamp(2rem, 4.1vw, 3.25rem);">El Protocolo E91</h1>
+          <p class="slide-subtitle" style="max-width: 760px; font-size: clamp(0.9rem, 1.25vw, 1.08rem);">
             Ciberseguridad garantizada por las leyes de la física
           </p>
 
-          <!-- Ilustración SVG protagonista: Alice, Fuente EPR, Bob y Eve acechando en rojo -->
-          <div style="width: 100%; max-width: 740px; margin: 0.5rem auto 0 auto;">
-            <svg viewBox="0 0 740 245" width="100%" height="auto" aria-label="Fuente central enviando pares entrelazados a Alice y Bob con Eve acechando en rojo">
+          <!-- Ilustración SVG protagonista ampliada: Alice, Fuente EPR, Bob y Eve acechando en rojo -->
+          <div style="width: 100%; max-width: 1020px; margin: 0.25rem auto 0 auto;">
+            <svg viewBox="0 0 880 330" width="100%" style="max-height: 55vh;" height="auto" aria-label="Fuente central enviando pares entrelazados a Alice y Bob con Eve acechando en rojo">
               <defs>
                 <radialGradient id="sourceGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#A855F7" stop-opacity="0.9"/>
-                  <stop offset="60%" stop-color="#00D4FF" stop-opacity="0.35"/>
+                  <stop offset="0%" stop-color="#A855F7" stop-opacity="0.95"/>
+                  <stop offset="55%" stop-color="#00D4FF" stop-opacity="0.4"/>
+                  <stop offset="100%" stop-color="#0B132B" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="aliceNodeGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#0B132B" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="bobNodeGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#10B981" stop-opacity="0.32"/>
                   <stop offset="100%" stop-color="#0B132B" stop-opacity="0"/>
                 </radialGradient>
                 <radialGradient id="eveGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#EF4444" stop-opacity="0.35"/>
+                  <stop offset="0%" stop-color="#EF4444" stop-opacity="0.45"/>
                   <stop offset="100%" stop-color="#0B132B" stop-opacity="0"/>
                 </radialGradient>
               </defs>
 
-              <!-- Onda de entrelazamiento conectora -->
-              <path d="M 120 82 Q 190 40, 260 82 T 370 82 T 480 82 T 620 82"
-                    fill="none" stroke="rgba(168, 85, 247, 0.38)" stroke-width="2.5" class="svg-wave"/>
+              <!-- Halo cuántico global de correlación -->
+              <path d="M 115 110 Q 275 18, 440 110 T 765 110"
+                    fill="none" stroke="rgba(168, 85, 247, 0.45)" stroke-width="3" class="svg-wave"/>
+              <path d="M 115 110 Q 275 202, 440 110 T 765 110"
+                    fill="none" stroke="rgba(0, 212, 255, 0.25)" stroke-width="2" class="svg-wave"/>
 
-              <!-- Haz hacia Alice -->
-              <line x1="370" y1="82" x2="132" y2="82" stroke="#00D4FF" stroke-width="3.5" class="svg-wave"/>
-              <!-- Haz hacia Bob -->
-              <line x1="370" y1="82" x2="608" y2="82" stroke="#00D4FF" stroke-width="3.5" class="svg-wave"/>
+              <!-- Haz cuántico hacia Alice -->
+              <line x1="440" y1="110" x2="178" y2="110" stroke="#00D4FF" stroke-width="4.5" class="svg-wave"/>
+              <!-- Haz cuántico hacia Bob -->
+              <line x1="440" y1="110" x2="702" y2="110" stroke="#10B981" stroke-width="4.5" class="svg-wave"/>
 
               <!-- Haz espía discontinuo rojo de Eve intentando interceptar el canal -->
-              <line x1="505" y1="184" x2="495" y2="90" stroke="#EF4444" stroke-width="2.5" stroke-dasharray="6 5" class="svg-wave"/>
-              <circle cx="495" cy="82" r="10" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="3 3"/>
+              <line x1="600" y1="244" x2="588" y2="122" stroke="#EF4444" stroke-width="3.2" stroke-dasharray="7 5" class="svg-wave"/>
+              <circle cx="588" cy="110" r="15" fill="rgba(239, 68, 68, 0.16)" stroke="#EF4444" stroke-width="2.5" stroke-dasharray="4 3"/>
 
               <!-- Nodo Alice (Izquierda) -->
-              <g transform="translate(95, 82)">
-                <circle r="44" fill="rgba(0, 212, 255, 0.14)" stroke="#00D4FF" stroke-width="2.5"/>
-                <text y="-4" text-anchor="middle" fill="#00D4FF" font-size="15" font-weight="800">ALICE</text>
-                <text y="15" text-anchor="middle" fill="#CBD5E1" font-size="11">Detector A</text>
+              <g transform="translate(115, 110)">
+                <circle r="76" fill="url(#aliceNodeGlow)"/>
+                <circle r="58" fill="rgba(0, 212, 255, 0.14)" stroke="#00D4FF" stroke-width="3"/>
+                <circle r="48" fill="none" stroke="rgba(0, 212, 255, 0.35)" stroke-width="1.5" stroke-dasharray="5 4"/>
+                <text y="-5" text-anchor="middle" fill="#00D4FF" font-size="19" font-weight="900">ALICE</text>
+                <text y="18" text-anchor="middle" fill="#E2E8F0" font-size="12.5" font-weight="600">Detector A</text>
               </g>
 
               <!-- Fuente Central EPR -->
-              <g transform="translate(370, 82)">
-                <circle r="58" fill="url(#sourceGlow)" class="svg-pulse"/>
-                <circle r="36" fill="#16203C" stroke="#A855F7" stroke-width="2.5"/>
-                <text y="-3" text-anchor="middle" fill="#F8FAFC" font-size="14" font-weight="800">|Ψ⁻⟩</text>
-                <text y="14" text-anchor="middle" fill="#D8B4FE" font-size="10">Fuente EPR</text>
+              <g transform="translate(440, 110)">
+                <circle r="82" fill="url(#sourceGlow)" class="svg-pulse"/>
+                <circle r="50" fill="#16203C" stroke="#A855F7" stroke-width="3.5"/>
+                <circle r="41" fill="none" stroke="rgba(216, 180, 254, 0.4)" stroke-width="1.5"/>
+                <text y="-4" text-anchor="middle" fill="#FFFFFF" font-size="19" font-weight="900">|Ψ⁻⟩</text>
+                <text y="17" text-anchor="middle" fill="#D8B4FE" font-size="12" font-weight="700">Fuente EPR</text>
               </g>
 
               <!-- Nodo Bob (Derecha) -->
-              <g transform="translate(645, 82)">
-                <circle r="44" fill="rgba(0, 212, 255, 0.14)" stroke="#00D4FF" stroke-width="2.5"/>
-                <text y="-4" text-anchor="middle" fill="#00D4FF" font-size="15" font-weight="800">BOB</text>
-                <text y="15" text-anchor="middle" fill="#CBD5E1" font-size="11">Detector B</text>
+              <g transform="translate(765, 110)">
+                <circle r="76" fill="url(#bobNodeGlow)"/>
+                <circle r="58" fill="rgba(16, 185, 129, 0.14)" stroke="#10B981" stroke-width="3"/>
+                <circle r="48" fill="none" stroke="rgba(16, 185, 129, 0.35)" stroke-width="1.5" stroke-dasharray="5 4"/>
+                <text y="-5" text-anchor="middle" fill="#10B981" font-size="19" font-weight="900">BOB</text>
+                <text y="18" text-anchor="middle" fill="#E2E8F0" font-size="12.5" font-weight="600">Detector B</text>
               </g>
 
               <!-- Nodo Eve acechando en rojo -->
-              <g transform="translate(505, 198)">
-                <circle r="46" fill="url(#eveGlow)"/>
-                <rect x="-46" y="-26" width="92" height="52" rx="14" fill="rgba(239, 68, 68, 0.16)" stroke="#EF4444" stroke-width="2.5"/>
+              <g transform="translate(600, 265)">
+                <circle r="64" fill="url(#eveGlow)"/>
+                <rect x="-66" y="-36" width="132" height="72" rx="18" fill="rgba(239, 68, 68, 0.18)" stroke="#EF4444" stroke-width="3"/>
                 <!-- Icono ojo espía -->
-                <path d="M -18 -7 Q 0 -20, 18 -7 Q 0 6, -18 -7 Z" fill="none" stroke="#EF4444" stroke-width="2"/>
-                <circle cx="0" cy="-7" r="4" fill="#EF4444"/>
-                <text y="16" text-anchor="middle" fill="#EF4444" font-size="12" font-weight="800">EVE (Espía)</text>
+                <path d="M -24 -10 Q 0 -27, 24 -10 Q 0 7, -24 -10 Z" fill="none" stroke="#EF4444" stroke-width="2.5"/>
+                <circle cx="0" cy="-10" r="5.5" fill="#EF4444"/>
+                <text y="21" text-anchor="middle" fill="#EF4444" font-size="14.5" font-weight="900">EVE (Espía)</text>
               </g>
 
-              <!-- Fotones viajando -->
-              <circle cx="240" cy="82" r="6.5" fill="#00D4FF"/>
-              <circle cx="495" cy="82" r="6.5" fill="#00D4FF"/>
+              <!-- Fotones entrelazados viajando con halo -->
+              <g transform="translate(295, 110)">
+                <circle r="14" fill="rgba(0, 212, 255, 0.25)"/>
+                <circle r="8" fill="#00D4FF"/>
+              </g>
+              <g transform="translate(588, 110)">
+                <circle r="14" fill="rgba(16, 185, 129, 0.25)"/>
+                <circle r="8" fill="#10B981"/>
+              </g>
             </svg>
           </div>
         </div>
@@ -1807,58 +1833,132 @@
           btnPhilosophyAction.textContent = coinsMeasured ? "🔄 Volver a girar" : "⚡ Medir monedas";
           const coinBobVal = coinAliceVal === 0 ? 1 : 0;
 
+          // Generador de moneda metálica realista en 3D (Oro para 1, Plata-Platino para 0)
+          const renderRealisticCoin = (val, xPos, ownerLabel, accentColor) => {
+            const isGold = val === 1;
+            const faceGradId = isGold ? "coinGoldFace" : "coinSilverFace";
+            const rimGradId = isGold ? "coinGoldRim" : "coinSilverRim";
+            const innerBorder = isGold ? "#78350F" : "#334155";
+            const textFill = isGold ? "#451A03" : "#0F172A";
+            const textHighlight = isGold ? "#FEF08A" : "#FFFFFF";
+            const faceName = isGold ? "CARA · Valor 1" : "CRUZ · Valor 0";
+
+            return `
+              <g transform="translate(${xPos}, 112)">
+                <text y="-84" text-anchor="middle" fill="${accentColor}" font-size="14" font-weight="800">${ownerLabel}</text>
+
+                ${
+                  coinsMeasured
+                    ? `
+                      <!-- Sombra realista proyectada sobre la superficie -->
+                      <ellipse cx="0" cy="64" rx="52" ry="10" fill="url(#coinCastShadow)"/>
+
+                      <!-- Canto / grosor 3D inferior con estriado metálico -->
+                      <circle cx="0" cy="7" r="56" fill="url(#${rimGradId})"/>
+                      <circle cx="0" cy="7" r="55" fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="2" stroke-dasharray="2.5 2.5"/>
+
+                      <!-- Cara principal metálica acuñada -->
+                      <circle cx="0" cy="0" r="56" fill="url(#${faceGradId})" stroke="${isGold ? "#FDE68A" : "#F8FAFC"}" stroke-width="2"/>
+
+                      <!-- Gráfila / anillo interior grabado -->
+                      <circle cx="0" cy="0" r="47" fill="none" stroke="${innerBorder}" stroke-width="1.8" stroke-opacity="0.55"/>
+                      <circle cx="0" cy="0" r="43" fill="none" stroke="${innerBorder}" stroke-width="1.5" stroke-dasharray="2 3" stroke-opacity="0.5"/>
+
+                      <!-- Emblema cuántico en bajorrelieve de fondo -->
+                      <ellipse rx="28" ry="10" transform="rotate(30)" fill="none" stroke="${innerBorder}" stroke-width="1.2" stroke-opacity="0.22"/>
+                      <ellipse rx="28" ry="10" transform="rotate(-30)" fill="none" stroke="${innerBorder}" stroke-width="1.2" stroke-opacity="0.22"/>
+
+                      <!-- Número acuñado con relieve 3D (luz superior + sombra inferior) -->
+                      <text y="16" text-anchor="middle" fill="${textHighlight}" font-family="Georgia, serif" font-size="46" font-weight="900" opacity="0.85">${val}</text>
+                      <text y="14" text-anchor="middle" fill="${textFill}" font-family="Georgia, serif" font-size="46" font-weight="900">${val}</text>
+
+                      <!-- Reflejo especular metálico diagonal -->
+                      <circle cx="0" cy="0" r="55" fill="url(#coinSpecularSheen)"/>
+
+                      <text y="86" text-anchor="middle" fill="${accentColor}" font-size="12.5" font-weight="800">${faceName}</text>
+                    `
+                    : `
+                      <!-- Sombra difusa en el suelo mientras la moneda gira en el aire -->
+                      <ellipse cx="0" cy="68" rx="44" ry="8" fill="url(#coinCastShadow)" opacity="0.7"/>
+
+                      <!-- Levitación + rotación 3D realista de moneda metálica -->
+                      <g style="transform-box: fill-box; transform-origin: center; animation: coinHover 1.8s ease-in-out infinite;">
+                        <g style="transform-box: fill-box; transform-origin: center; animation: spinCoin 1.1s linear infinite;">
+                          <!-- Canto 3D metálico -->
+                          <ellipse cx="3" cy="2" rx="50" ry="54" fill="url(#coinGoldRim)"/>
+                          <!-- Disco metálico dorado/plateado -->
+                          <circle cx="0" cy="0" r="52" fill="url(#coinGoldFace)" stroke="#FEF08A" stroke-width="2.2"/>
+                          <circle cx="0" cy="0" r="43" fill="none" stroke="#78350F" stroke-width="1.6" stroke-dasharray="3 3" stroke-opacity="0.55"/>
+                          <!-- Símbolo central en relieve -->
+                          <text y="12" text-anchor="middle" fill="#FEF08A" font-family="Georgia, serif" font-size="30" font-weight="900">0 / 1</text>
+                          <text y="10" text-anchor="middle" fill="#451A03" font-family="Georgia, serif" font-size="30" font-weight="900">0 / 1</text>
+                          <!-- Brillo especular -->
+                          <circle cx="0" cy="0" r="51" fill="url(#coinSpecularSheen)"/>
+                        </g>
+                      </g>
+
+                      <text y="86" text-anchor="middle" fill="#CBD5E1" font-size="11.5" font-weight="600">Girando en el aire (indefinida)</text>
+                    `
+                }
+              </g>
+            `;
+          };
+
           philosophyVisualStage.innerHTML = `
-            <svg viewBox="0 0 680 230" width="100%" style="max-width:680px;" height="auto" aria-label="Monedas cuánticas entrelazadas girando">
+            <svg viewBox="0 0 680 245" width="100%" style="max-width:680px;" height="auto" aria-label="Monedas metálicas realistas entrelazadas">
+              <defs>
+                <!-- Gradiente metálico Oro real (Valor 1) -->
+                <radialGradient id="coinGoldFace" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" stop-color="#FEF9C3"/>
+                  <stop offset="30%" stop-color="#FACC15"/>
+                  <stop offset="72%" stop-color="#D97706"/>
+                  <stop offset="100%" stop-color="#92400E"/>
+                </radialGradient>
+                <linearGradient id="coinGoldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#B45309"/>
+                  <stop offset="50%" stop-color="#78350F"/>
+                  <stop offset="100%" stop-color="#451A03"/>
+                </linearGradient>
+
+                <!-- Gradiente metálico Plata / Platino real (Valor 0) -->
+                <radialGradient id="coinSilverFace" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" stop-color="#FFFFFF"/>
+                  <stop offset="32%" stop-color="#E2E8F0"/>
+                  <stop offset="75%" stop-color="#94A3B8"/>
+                  <stop offset="100%" stop-color="#475569"/>
+                </radialGradient>
+                <linearGradient id="coinSilverRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#64748B"/>
+                  <stop offset="50%" stop-color="#334155"/>
+                  <stop offset="100%" stop-color="#1E293B"/>
+                </linearGradient>
+
+                <!-- Reflejo especular diagonal -->
+                <linearGradient id="coinSpecularSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.48"/>
+                  <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+                  <stop offset="55%" stop-color="#FFFFFF" stop-opacity="0"/>
+                  <stop offset="85%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+                  <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+                </linearGradient>
+
+                <!-- Sombra realista proyectada -->
+                <radialGradient id="coinCastShadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#000000" stop-opacity="0.65"/>
+                  <stop offset="70%" stop-color="#000000" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+
               <!-- Onda cuántica conectora -->
-              <path d="M 225 112 Q 282 72, 340 112 T 455 112"
+              <path d="M 235 112 Q 288 70, 340 112 T 445 112"
                     fill="none" stroke="${coinsMeasured ? "#10B981" : "#00D4FF"}" stroke-width="3.5" class="svg-wave"/>
-              <text x="340" y="68" text-anchor="middle" fill="#D8B4FE" font-size="11.5" font-weight="700">
+              <text x="340" y="64" text-anchor="middle" fill="#D8B4FE" font-size="11.5" font-weight="700">
                 ${coinsMeasured ? "Estado colapsado (100 % opuestos)" : "Entrelazamiento activo"}
               </text>
 
-              <!-- MONEDA DE ALICE -->
-              <g transform="translate(175, 112)">
-                <text y="-78" text-anchor="middle" fill="#00D4FF" font-size="14" font-weight="800">PARTÍCULA ALICE</text>
-                ${
-                  coinsMeasured
-                    ? `
-                      <circle r="54" fill="rgba(0, 212, 255, 0.2)" stroke="#00D4FF" stroke-width="3.5"/>
-                      <circle r="44" fill="none" stroke="#00D4FF" stroke-width="1.5" stroke-dasharray="4 3"/>
-                      <text y="12" text-anchor="middle" fill="#FFFFFF" font-size="34" font-weight="900">${coinAliceVal}</text>
-                      <text y="78" text-anchor="middle" fill="#00D4FF" font-size="12" font-weight="800">Resultado: ${coinAliceVal}</text>
-                    `
-                    : `
-                      <circle r="58" fill="none" stroke="rgba(0, 212, 255, 0.35)" stroke-width="2" stroke-dasharray="6 5" class="svg-pulse"/>
-                      <g style="transform-box: fill-box; transform-origin: center; animation: spinCoin 1.2s linear infinite;">
-                        <circle r="50" fill="rgba(0, 212, 255, 0.18)" stroke="#00D4FF" stroke-width="3"/>
-                        <text y="8" text-anchor="middle" fill="#00D4FF" font-size="22" font-weight="900">0 | 1</text>
-                      </g>
-                      <text y="78" text-anchor="middle" fill="#94A3B8" font-size="11.5">Girando (indefinida)</text>
-                    `
-                }
-              </g>
-
-              <!-- MONEDA DE BOB -->
-              <g transform="translate(505, 112)">
-                <text y="-78" text-anchor="middle" fill="#10B981" font-size="14" font-weight="800">PARTÍCULA BOB</text>
-                ${
-                  coinsMeasured
-                    ? `
-                      <circle r="54" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="3.5"/>
-                      <circle r="44" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4 3"/>
-                      <text y="12" text-anchor="middle" fill="#FFFFFF" font-size="34" font-weight="900">${coinBobVal}</text>
-                      <text y="78" text-anchor="middle" fill="#10B981" font-size="12" font-weight="800">Resultado: ${coinBobVal}</text>
-                    `
-                    : `
-                      <circle r="58" fill="none" stroke="rgba(16, 185, 129, 0.35)" stroke-width="2" stroke-dasharray="6 5" class="svg-pulse"/>
-                      <g style="transform-box: fill-box; transform-origin: center; animation: spinCoin 1.2s linear infinite;">
-                        <circle r="50" fill="rgba(16, 185, 129, 0.18)" stroke="#10B981" stroke-width="3"/>
-                        <text y="8" text-anchor="middle" fill="#10B981" font-size="22" font-weight="900">0 | 1</text>
-                      </g>
-                      <text y="78" text-anchor="middle" fill="#94A3B8" font-size="11.5">Girando (indefinida)</text>
-                    `
-                }
-              </g>
+              ${renderRealisticCoin(coinAliceVal, 175, "MONEDA ALICE", "#00D4FF")}
+              ${renderRealisticCoin(coinBobVal, 505, "MONEDA BOB", "#10B981")}
             </svg>
             <span class="badge badge-bob" style="margin-top:0.2rem;">Monedas girando (se define al medir)</span>
           `;
