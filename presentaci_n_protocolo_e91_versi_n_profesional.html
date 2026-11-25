@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El Protocolo E91 — Criptografía Cuántica</title>
+  <style>
+    /* ==========================================================================
+       1. TOKENS DE DISEÑO Y PALETA ÓPTICA DE ALTO CONTRASTE
+       ========================================================================== */
+    :root {
+      --bg: #070B16;
+      --bg-panel: rgba(13, 20, 38, 0.86);
+      --bg-board: #050811;
+      --line: rgba(255, 255, 255, 0.13);
+      --line-strong: rgba(255, 255, 255, 0.26);
+
+      --ink: #F4F7FC;
+      --mu: #C2CEE3;
+      --dim: #8C9AB5;
+
+      /* Colores semánticos */
+      --a: #6CB8FF;   /* Alice */
+      --b: #F4B550;   /* Bob */
+      --e: #FF5C61;   /* Eve / Alerta */
+      --q: #B79CFF;   /* Cuántica / Entrelazamiento */
+      --ok: #5EE0A0;  /* Seguro / Validado */
+
+      --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-math: "Cambria Math", "STIX Two Math", "Times New Roman", Georgia, serif;
+      --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #111A33 0%, #070B16 70%, #04060D 100%);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* ==========================================================================
+       2. LIENZO PANORÁMICO ESCALABLE (1280 x 720)
+       ========================================================================== */
+    #stage-wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #deck {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      background:
+        radial-gradient(circle at 18% 15%, rgba(108, 184, 255, 0.08), transparent 42%),
+        radial-gradient(circle at 82% 85%, rgba(183, 156, 255, 0.08), transparent 45%),
+        linear-gradient(180deg, #0B1122 0%, #070B16 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75);
+      overflow: hidden;
+      transform-origin: center center;
+    }
+
+    /* Barra superior de progreso y contador */
+    #bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.07);
+      z-index: 30;
+    }
+
+    #bar i {
+      display: block;
+      height: 100%;
+      width: 11.11%;
+      background: linear-gradient(90deg, var(--a), var(--q), var(--ok));
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #num {
+      position: absolute;
+      top: 18px;
+      right: 26px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--mu);
+      background: rgba(13, 20, 38, 0.88);
+      border: 1px solid var(--line-strong);
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 46;
+    }
+
+    #num:hover {
+      border-color: var(--a);
+      color: #FFFFFF;
+      background: rgba(108, 184, 255, 0.18);
+    }
+
+    #jumpMenu {
+      position: absolute;
+      top: 54px;
+      right: 26px;
+      width: 280px;
+      background: rgba(7, 11, 22, 0.97);
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      padding: 6px;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 50;
+    }
+
+    #jumpMenu.open {
+      display: flex;
+    }
+
+    #jumpMenu button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-radius: 9px;
+      padding: 7px 10px;
+      color: var(--mu);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    #jumpMenu button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+
+    #jumpMenu button.on {
+      background: rgba(108, 184, 255, 0.2);
+      color: var(--a);
+      font-weight: 800;
+    }
+
+    /* ==========================================================================
+       3. DIAPOSITIVAS Y ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    .s {
+      position: absolute;
+      inset: 0;
+      padding: 36px 52px 54px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(12px);
+      transition: opacity 0.34s ease, transform 0.34s ease, visibility 0.34s;
+    }
+
+    .s.on {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .s.on .rv {
+      animation: riseIn 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(var(--d, 0) * 85ms);
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .kicker {
+      font-size: 12.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--a);
+    }
+
+    h1 {
+      font-size: 72px;
+      font-weight: 900;
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #FFFFFF 25%, var(--a) 68%, var(--q) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.14;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+
+    .sub {
+      font-size: 21px;
+      color: var(--mu);
+      font-weight: 500;
+    }
+
+    .cap {
+      text-align: center;
+      font-size: 16.5px;
+      color: var(--mu);
+      line-height: 1.4;
+    }
+
+    /* Colores utilitarios */
+    .ca { color: var(--a); }
+    .cb { color: var(--b); }
+    .ce { color: var(--e); }
+    .cq { color: var(--q); }
+    .cok { color: var(--ok); }
+    .mu { color: var(--mu); }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ==========================================================================
+       4. BOTONES, PÍLDORAS Y PIZARRAS ÓPTICAS MATEMÁTICAS
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.13);
+      transform: translateY(-1px);
+    }
+
+    .btn.p {
+      background: linear-gradient(135deg, rgba(108, 184, 255, 0.24), rgba(183, 156, 255, 0.24));
+      border-color: var(--a);
+      color: #FFFFFF;
+    }
+
+    .btn.on {
+      background: rgba(108, 184, 255, 0.22);
+      border-color: var(--a);
+      color: var(--a);
+      box-shadow: 0 0 18px rgba(108, 184, 255, 0.22);
+    }
+
+    .btn.ok-on {
+      background: rgba(94, 224, 160, 0.2);
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    .btn.ev-on {
+      background: rgba(255, 92, 97, 0.22);
+      border-color: var(--e);
+      color: var(--e);
+      box-shadow: 0 0 18px rgba(255, 92, 97, 0.24);
+    }
+
+    .seg {
+      display: inline-flex;
+      background: rgba(5, 8, 17, 0.75);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .seg button {
+      border: none;
+      background: transparent;
+      color: var(--mu);
+      padding: 8px 15px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .seg button.on {
+      background: rgba(108, 184, 255, 0.22);
+      color: #FFFFFF;
+      box-shadow: inset 0 0 0 1px rgba(108, 184, 255, 0.5);
+    }
+
+    /* Pizarra Óptica Matemática */
+    .math-board {
+      background: linear-gradient(180deg, rgba(6, 10, 22, 0.95) 0%, rgba(10, 16, 34, 0.92) 100%);
+      border: 1px solid rgba(108, 184, 255, 0.32);
+      border-radius: 16px;
+      padding: 14px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 0 24px rgba(108, 184, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eq-main {
+      font-family: var(--font-math);
+      font-size: 31px;
+      font-weight: 700;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Fracciones apiladas y raíces reales */
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      font-size: 0.72em;
+      line-height: 1.05;
+      margin: 0 3px;
+    }
+
+    .frac .num {
+      padding: 0 4px 2px;
+      border-bottom: 1.8px solid currentColor;
+    }
+
+    .frac .den {
+      padding: 2px 4px 0;
+    }
+
+    .sqrt {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .sqrt::before {
+      content: "√";
+      margin-right: 1px;
+    }
+
+    .sqrt > span {
+      border-top: 1.6px solid currentColor;
+      padding: 0 2px;
+    }
+
+    .eq-tags {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .eq-tags span {
+      padding: 3px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+    }
+
+    /* ==========================================================================
+       5. ESTILOS POR DIAPOSITIVA
+       ========================================================================== */
+    /* Diapositiva 1: Portada */
+    #s1 {
+      align-items: center;
+      text-align: center;
+      padding-top: 32px;
+      gap: 8px;
+    }
+
+    /* Diapositiva 2: Problema y salto */
+    .g2-top {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .pcard {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .pill-tag {
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+    }
+
+    .panel2 {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Diapositiva 3: Cajas vs Monedas 3D */
+    .stage3 {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      height: 330px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 12px 24px;
+    }
+
+    .hide {
+      display: none !important;
+    }
+
+    #quant {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      width: 100%;
+    }
+
+    .cw {
+      text-align: center;
+      width: 220px;
+      perspective: 900px;
+    }
+
+    .cw .nm {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .cw .rs {
+      margin-top: 12px;
+      font-size: 15.5px;
+      font-weight: 800;
+      opacity: 0.35;
+      transition: opacity 0.3s ease;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cw .rs.on {
+      opacity: 1;
+    }
+
+    .coin {
+      width: 138px;
+      height: 138px;
+      margin: 0 auto;
+      position: relative;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+
+    .coin.set {
+      transition: transform 1.05s cubic-bezier(0.2, 0.92, 0.3, 1.05);
+    }
+
+    .coin-shadow {
+      width: 108px;
+      height: 16px;
+      margin: 14px auto 0;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.65) 0%, transparent 72%);
+      animation: shPulse 1.8s ease-in-out infinite;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    .coin-shadow.landed {
+      animation: none;
+      transform: scaleX(1.14);
+      opacity: 0.9;
+    }
+
+    @keyframes shPulse {
+      0%, 100% { transform: scaleX(0.82); opacity: 0.45; }
+      50% { transform: scaleX(1.06); opacity: 0.78; }
+    }
+
+    #einst {
+      cursor: pointer;
+    }
+
+    #einst:hover .card-box-hover {
+      filter: brightness(1.08);
+    }
+
+    .coin .f {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, serif;
+      font-size: 62px;
+      font-weight: 900;
+      backface-visibility: hidden;
+      box-shadow: inset 0 4px 12px rgba(255, 255, 255, 0.55), inset 0 -6px 14px rgba(0, 0, 0, 0.5), 0 12px 26px rgba(0, 0, 0, 0.55);
+    }
+
+    /* Cara 0: Plata / Cobalto metálico */
+    .coin .f0 {
+      background: radial-gradient(circle at 32% 28%, #FFFFFF 0%, #DCE6F7 36%, #8FA3C4 78%, #526482 100%);
+      border: 4px solid #E2E8F0;
+      color: #0F172A;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    /* Cara 1: Oro acuñado */
+    .coin .f1 {
+      background: radial-gradient(circle at 32% 28%, #FEF9C3 0%, #FACC15 36%, #D97706 78%, #92400E 100%);
+      border: 4px solid #FDE68A;
+      color: #451A03;
+      text-shadow: 0 1px 0 rgba(254, 240, 138, 0.7);
+      transform: rotateY(180deg);
+    }
+
+    /* Diapositiva 4: Explorador de ángulos */
+    .g4 {
+      display: grid;
+      grid-template-columns: 1.32fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .g4 > div {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .sel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sel label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .sel .bg {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sel button {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 9px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #sa button.on {
+      background: rgba(108, 184, 255, 0.24);
+      border-color: var(--a);
+      color: var(--a);
+    }
+
+    #sb button.on {
+      background: rgba(244, 181, 80, 0.24);
+      border-color: var(--b);
+      color: var(--b);
+    }
+
+    /* Matriz 3x3 */
+    .mx {
+      display: grid;
+      grid-template-columns: 74px repeat(3, 1fr);
+      gap: 6px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .mx .h {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--mu);
+    }
+
+    .mx button {
+      padding: 9px 4px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--mu);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mx button.k { color: var(--ok); }
+    .mx button.t { color: var(--q); }
+
+    .mx button.on {
+      transform: scale(1.04);
+      border-width: 2px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #FFFFFF;
+    }
+
+    .mx button.k.on { border-color: var(--ok); }
+    .mx button.t.on { border-color: var(--q); }
+    .mx button.u.on { border-color: var(--mu); }
+
+    .ro {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      color: var(--mu);
+    }
+
+    .ro + .ro {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    .ro b {
+      font-size: 25px;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+    }
+
+    #v4 {
+      background: rgba(6, 10, 22, 0.85);
+      border-left: 4px solid var(--q);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14.5px;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+
+    /* Anexo 4B */
+    .g4b {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .g4b > div {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Diapositiva 5: Tabla de cribado */
+    .st5 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .st5 > div {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 14px;
+      color: var(--mu);
+      line-height: 1.38;
+    }
+
+    .st5 b {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+
+    table.t5 {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-panel);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      font-size: 15px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .t5 th {
+      background: rgba(5, 8, 17, 0.9);
+      color: var(--mu);
+      font-weight: 800;
+      padding: 11px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .t5 td {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .t5 tr.rk { background: rgba(94, 224, 160, 0.11); }
+    .t5 tr.rt { background: rgba(183, 156, 255, 0.09); }
+
+    .chip {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+
+    .chip.k { background: rgba(94, 224, 160, 0.18); color: var(--ok); }
+    .chip.t { background: rgba(183, 156, 255, 0.18); color: var(--q); }
+    .chip.u { background: rgba(255, 255, 255, 0.08); color: var(--mu); }
+
+    .key-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(94, 224, 160, 0.14);
+      border: 1px solid rgba(94, 224, 160, 0.45);
+      padding: 8px 16px;
+      border-radius: 999px;
+    }
+
+    #key {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--ok);
+      letter-spacing: 0.12em;
+    }
+
+    /* Diapositivas 6 y 7: Tacómetros CHSH */
+    .g6 {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .gauge {
+      width: 100%;
+      max-height: 295px;
+      overflow: visible;
+    }
+
+    .gauge .nd {
+      transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .gauge .gn {
+      font-family: var(--font-mono);
+      font-size: 30px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gauge-alert {
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .gauge-alert.on {
+      opacity: 1;
+      animation: gPulse 1.3s ease-in-out infinite;
+    }
+
+    @keyframes gPulse {
+      0%, 100% { stroke-opacity: 0.85; }
+      50% { stroke-opacity: 0.25; }
+    }
+
+    .o6 {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .o6 button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line-strong);
+      background: var(--bg-panel);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .o6 button small {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--mu);
+    }
+
+    .o6 button.on {
+      border-color: var(--a);
+      background: rgba(108, 184, 255, 0.18);
+    }
+
+    .verd {
+      background: rgba(6, 10, 22, 0.88);
+      border-left: 4px solid var(--ok);
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 15.5px;
+      line-height: 1.45;
+    }
+
+    /* Diapositiva 7: Flujo de ataque Eve */
+    .st4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .st4 > div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dim);
+      transition: all 0.3s ease;
+    }
+
+    .st4 i {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--line-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-style: normal;
+      font-size: 12.5px;
+      flex-shrink: 0;
+    }
+
+    .st4 div.on {
+      color: var(--ink);
+      border-color: rgba(255, 92, 97, 0.45);
+    }
+
+    .st4 div.on i {
+      background: var(--e);
+      border-color: var(--e);
+      color: #FFFFFF;
+    }
+
+    /* Diapositiva 8: Micius */
+    .g8 {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .cmp8 {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .cmp8 > div {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Diapositiva 9: Conclusiones */
+    .g9 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .g9 > div {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .g9 > div:hover {
+      transform: translateY(-3px);
+      border-color: rgba(108, 184, 255, 0.45);
+    }
+
+    .g9 svg {
+      width: 120px;
+      height: 84px;
+    }
+
+    .g9 b {
+      font-size: 18px;
+      color: var(--ink);
+    }
+
+    .g9 span {
+      font-size: 14.5px;
+      color: var(--mu);
+      line-height: 1.4;
+    }
+
+    .lim9 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .lim9 > div {
+      background: rgba(5, 8, 17, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--mu);
+    }
+
+    .lim9 svg {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       6. NOTAS DEL ORADOR Y NAVEGACIÓN FLOTANTE
+       ========================================================================== */
+    #notes {
+      position: absolute;
+      left: 28px;
+      right: 260px;
+      bottom: 14px;
+      background: rgba(5, 8, 17, 0.96);
+      border: 1px solid var(--a);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 14.5px;
+      line-height: 1.48;
+      color: var(--ink);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px);
+      transition: all 0.25s ease;
+      z-index: 40;
+    }
+
+    #notes.on {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    #nav {
+      position: absolute;
+      right: 22px;
+      bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 45;
+    }
+
+    #nav button {
+      height: 36px;
+      min-width: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line-strong);
+      background: rgba(13, 20, 38, 0.9);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    #nav button:hover:not(:disabled) {
+      background: rgba(108, 184, 255, 0.24);
+      border-color: var(--a);
+    }
+
+    #nav button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage-wrap">
+    <div id="deck">
+      <!-- Barra de progreso, salto rápido y pantalla completa -->
+      <div id="bar"><i></i></div>
+      <button id="num" type="button" title="Saltar a cualquier diapositiva">1 / 9 ▾</button>
+      <div id="jumpMenu" role="menu" aria-label="Índice de diapositivas"></div>
+
+      <!-- Definiciones SVG globales reutilizables -->
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+          <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#E2E8F0"/>
+            <stop offset="45%" stop-color="#94A3B8"/>
+            <stop offset="100%" stop-color="#334155"/>
+          </linearGradient>
+          <linearGradient id="dark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1E293B"/>
+            <stop offset="100%" stop-color="#090D1A"/>
+          </linearGradient>
+          <radialGradient id="lens" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="35%" stop-color="#93C5FD"/>
+            <stop offset="85%" stop-color="#1D4ED8"/>
+            <stop offset="100%" stop-color="#0F172A"/>
+          </radialGradient>
+          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#B79CFF" stop-opacity="0.65"/>
+            <stop offset="60%" stop-color="#6CB8FF" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#070B16" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#34D399"/>
+            <stop offset="100%" stop-color="#065F46"/>
+          </linearGradient>
+          <filter id="bl" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5"/>
+          </filter>
+          <filter id="bl2" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4"/>
+          </filter>
+        </defs>
+      </svg>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 1: PORTADA
+           ================================================================== -->
+      <section class="s on" id="s1">
+        <div class="kicker rv">Información y Criptografía Cuántica</div>
+        <h1 class="rv" style="--d:1">El Protocolo E91</h1>
+        <p class="sub rv" style="--d:2">Ciberseguridad garantizada por las leyes de la física</p>
+        <svg id="cover" class="rv" style="--d:3; width:100%; max-height:430px; margin-top:4px" viewBox="0 0 1136 375" role="img" aria-label="Banco óptico del protocolo E91 con Alice, Fuente entrelazada, Bob y Eve"></svg>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 2: DEL CIFRADO CLÁSICO AL SALTO CUÁNTICO
+           ================================================================== -->
+      <section class="s" id="s2">
+        <div class="kicker rv">01 · Contexto y Evolución</div>
+        <h2 class="rv" style="--d:1">Del cifrado clásico al salto cuántico</h2>
+
+        <div class="g2-top rv" style="--d:2">
+          <div class="pcard">
+            <span class="pill-tag ca">Cifrado RSA actual</span>
+            <svg viewBox="0 0 160 88" style="width:150px;height:82px">
+              <rect x="52" y="34" width="56" height="42" rx="9" fill="url(#metal)"/>
+              <path d="M64 34V22a16 16 0 0 1 32 0v12" fill="none" stroke="#CBD5E1" stroke-width="5"/>
+              <circle cx="80" cy="52" r="5" fill="#090D1A"/>
+              <path d="M80 55v10" stroke="#090D1A" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <strong class="ca" style="font-size:16px">Factorización lenta</strong>
+          </div>
+
+          <div class="pcard" style="border-color:rgba(255,92,97,.35)">
+            <span class="pill-tag ce">Algoritmo de Shor</span>
+            <svg viewBox="0 0 160 88" style="width:150px;height:82px">
+              <rect x="44" y="10" width="72" height="32" rx="7" fill="rgba(255,92,97,.18)" stroke="#FF5C61" stroke-width="2"/>
+              <text x="80" y="31" text-anchor="middle" fill="#FF5C61" font-size="14" font-weight="900">Q-CPU</text>
+              <path d="M80 42l-9 16h14l-10 20" fill="none" stroke="#F4B550" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <strong class="ce" style="font-size:16px">Ruptura cuántica</strong>
+          </div>
+
+          <div class="pcard" style="border-color:rgba(94,224,160,.35)">
+            <span class="pill-tag cok">Solución QKD</span>
+            <svg viewBox="0 0 160 88" style="width:150px;height:82px">
+              <path d="M80 8 118 22V48C118 68 96 80 80 84 64 80 42 68 42 48V22z" fill="url(#shield)" stroke="#9DF5CB" stroke-width="1.5"/>
+              <circle cx="80" cy="46" r="11" fill="#6CB8FF"/>
+              <circle cx="80" cy="46" r="19" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="4 4"/>
+            </svg>
+            <strong class="cok" style="font-size:16px">Leyes de la física</strong>
+          </div>
+        </div>
+
+        <div class="panel2 rv" style="--d:3">
+          <div class="row" style="justify-content:space-between">
+            <span style="font-size:16px;font-weight:700;color:var(--mu)">Arquitectura de distribución de clave:</span>
+            <div class="seg" id="seg2">
+              <button data-m="bb84">BB84 (1984)</button>
+              <button data-m="e91" class="on">E91 (Ekert, 1991)</button>
+            </div>
+          </div>
+          <svg id="sc2" viewBox="0 0 1060 156" style="width:100%;height:152px"></svg>
+          <p class="cap" id="cap2"></p>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 3: ENTRELAZAMIENTO Y PARADOJA EPR
+           ================================================================== -->
+      <section class="s" id="s3">
+        <div class="kicker rv">02 · Fundamentos Físicos</div>
+        <h2 class="rv" style="--d:1">Entrelazamiento cuántico y la paradoja EPR</h2>
+
+        <div class="math-board rv" style="--d:2">
+          <div class="eq-main">
+            <span>|Ψ⁻⟩</span>
+            <span>=</span>
+            <span class="frac cb">
+              <span class="num">1</span>
+              <span class="den"><span class="sqrt"><span>2</span></span></span>
+            </span>
+            <span>(</span>
+            <span>|0⟩<sub class="ca">A</sub>|1⟩<sub class="cb">B</sub></span>
+            <span>−</span>
+            <span>|1⟩<sub class="ca">A</sub>|0⟩<sub class="cb">B</sub></span>
+            <span>)</span>
+          </div>
+          <div class="eq-tags">
+            <span class="cq">Superposición antes de medir</span>
+            <span class="cok">Resultados 100 % opuestos en igual ángulo</span>
+          </div>
+        </div>
+
+        <div class="row rv" style="--d:3;justify-content:space-between">
+          <div class="seg" id="seg3">
+            <button data-m="e" class="on">Einstein (Variables ocultas)</button>
+            <button data-m="q">Cuántica (Entrelazamiento)</button>
+          </div>
+          <button class="btn p" id="act">Abrir cajas</button>
+        </div>
+
+        <div class="stage3 rv" style="--d:4">
+          <svg id="einst" viewBox="0 0 920 290" style="width:100%;height:100%"></svg>
+          <div id="quant" class="hide">
+            <div class="cw">
+              <div class="nm ca">Partícula de Alice</div>
+              <div class="coin" id="cA" title="Haz clic para medir">
+                <div class="f f0">0</div>
+                <div class="f f1">1</div>
+              </div>
+              <div class="coin-shadow" id="sA"></div>
+              <div class="rs ca" id="rA">Girando...</div>
+            </div>
+            <svg viewBox="0 0 320 80" style="width:320px;height:80px;margin-top:-36px">
+              <path id="wv" d="M0 40Q40 0 80 40T160 40T240 40T320 40" fill="none" stroke="#B79CFF" stroke-width="3.5" stroke-dasharray="7 7" stroke-linecap="round">
+                <animate attributeName="stroke-dashoffset" to="-28" dur=".9s" repeatCount="indefinite"/>
+              </path>
+              <circle id="cPulse" cx="0" cy="40" r="8" fill="#5EE0A0" opacity="0" filter="url(#bl2)"/>
+            </svg>
+            <div class="cw">
+              <div class="nm cb">Partícula de Bob</div>
+              <div class="coin" id="cB" title="Haz clic para medir">
+                <div class="f f0">0</div>
+                <div class="f f1">1</div>
+              </div>
+              <div class="coin-shadow" id="sB"></div>
+              <div class="rs cb" id="rB">Girando...</div>
+            </div>
+          </div>
+        </div>
+        <p class="cap" id="cap3"></p>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 4: CONFIGURACIÓN DEL PROTOCOLO E91
+           ================================================================== -->
+      <section class="s" id="s4">
+        <div class="row rv" style="justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="kicker">03 · Configuración Experimental</div>
+            <h2>Tres ángulos para cada lado</h2>
+          </div>
+          <button class="btn" id="bAx">📐 Anexo: correlación E</button>
+        </div>
+
+        <div class="g4 rv" style="--d:1">
+          <div>
+            <svg id="sc4" viewBox="0 0 680 262" style="width:100%"></svg>
+            <div class="sel">
+              <div>
+                <label class="ca">Ángulo de Alice (aᵢ)</label>
+                <div class="bg" id="sa"></div>
+              </div>
+              <div>
+                <label class="cb">Ángulo de Bob (bⱼ)</label>
+                <div class="bg" id="sb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:var(--mu);margin-bottom:8px">Matriz de combinaciones (haz clic para probar):</div>
+              <div class="mx" id="mx"></div>
+            </div>
+
+            <div>
+              <div class="ro">
+                <span>Diferencia angular (θₐᵦ):</span>
+                <b id="th">45°</b>
+              </div>
+              <div class="ro">
+                <span>Correlación E = −cos(θₐᵦ):</span>
+                <b id="ec" class="ca"></b>
+              </div>
+            </div>
+
+            <div id="v4"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA OCULTA 4B: ANEXO COEFICIENTE DE CORRELACIÓN E
+           ================================================================== -->
+      <section class="s" id="s4b">
+        <div class="row rv" style="justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="kicker cb">Anexo Técnico · Defensa del Tribunal</div>
+            <h2>Coeficiente de correlación E(aᵢ, bⱼ)</h2>
+          </div>
+          <button class="btn p" id="bBk">← Volver a Diapositiva 4</button>
+        </div>
+
+        <div class="math-board rv" style="--d:1">
+          <div class="eq-main" style="font-size:28px">
+            <span>E(aᵢ, bⱼ)</span>
+            <span>=</span>
+            <span>⟨A · B⟩</span>
+            <span>=</span>
+            <span>−cos(θₐᵦ)</span>
+          </div>
+          <div class="eq-tags">
+            <span class="cok">(+1)·(+1) = +1</span>
+            <span class="cok">(−1)·(−1) = +1</span>
+            <span class="ce">(+1)·(−1) = −1</span>
+          </div>
+        </div>
+
+        <div class="g4b rv" style="--d:2">
+          <div>
+            <span class="pill-tag ca">a₁ = 0° · b₁ = 45°</span>
+            <span class="mu">θₐᵦ = 45°</span>
+            <div class="eq-main ca" style="font-size:26px">
+              −<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>
+            </div>
+          </div>
+          <div>
+            <span class="pill-tag cb">a₁ = 0° · b₃ = 135°</span>
+            <span class="mu">θₐᵦ = 135°</span>
+            <div class="eq-main cb" style="font-size:26px">
+              +<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>
+            </div>
+          </div>
+          <div>
+            <span class="pill-tag ca">a₃ = 90° · b₁ = 45°</span>
+            <span class="mu">θₐᵦ = 45°</span>
+            <div class="eq-main ca" style="font-size:26px">
+              −<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>
+            </div>
+          </div>
+          <div>
+            <span class="pill-tag ca">a₃ = 90° · b₃ = 135°</span>
+            <span class="mu">θₐᵦ = 45°</span>
+            <div class="eq-main ca" style="font-size:26px">
+              −<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="math-board rv" style="--d:3;padding:12px 20px">
+          <div class="eq-main" style="font-size:25px">
+            <span>|S|</span>
+            <span>=</span>
+            <span class="ca">−<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span></span>
+            <span>−</span>
+            <span class="cb">(+<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>)</span>
+            <span>+</span>
+            <span class="ca">(−<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>)</span>
+            <span>+</span>
+            <span class="ca">(−<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span>)</span>
+            <span>=</span>
+            <span class="cok">2<span class="sqrt"><span>2</span></span> ≈ 2,83</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 5: PASO A PASO Y EJEMPLO PRÁCTICO
+           ================================================================== -->
+      <section class="s" id="s5">
+        <div class="kicker rv">03 · Mecánica Operativa</div>
+        <h2 class="rv" style="--d:1">Paso a paso y ejemplo práctico</h2>
+
+        <div class="st5 rv" style="--d:2">
+          <div><b class="ca">1. Medición aleatoria</b>Cada detector arroja +1 o −1 al azar.</div>
+          <div><b class="cb">2. Anuncio público</b>Dicen solo el ángulo usado, nunca el resultado.</div>
+          <div><b class="cq">3. Cribado en grupos</b>Iguales → Clave · Cruzados → Test CHSH.</div>
+          <div><b class="cok">4. Bob invierte sus bits</b>Voltea 0 ⇄ 1 para igualar la clave de Alice.</div>
+        </div>
+
+        <table class="t5 rv" style="--d:3">
+          <thead>
+            <tr>
+              <th>Par</th>
+              <th>Alice</th>
+              <th>Bob</th>
+              <th>Res. A</th>
+              <th>Res. B</th>
+              <th>Destino</th>
+              <th>Bit de clave (inversión de Bob)</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+
+        <div class="row rv" style="--d:4;justify-content:space-between">
+          <div class="row">
+            <button class="btn p" id="bRn">Nueva ronda aleatoria</button>
+            <button class="btn" id="bRs">Ejemplo original</button>
+            <span class="pill-tag mu" style="font-size:12.5px">+1 → bit 1 · −1 → bit 0</span>
+            <span id="roundStats" class="mu" style="font-size:14px;font-weight:700"></span>
+          </div>
+          <div class="key-pill">
+            <span class="mu" style="font-weight:700;font-size:15px">Clave compartida:</span>
+            <span id="key"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 6: EL DETECTOR DE ESPÍAS (DESIGUALDAD CHSH)
+           ================================================================== -->
+      <section class="s" id="s6">
+        <div class="kicker rv">04 · Demostración de Seguridad</div>
+        <h2 class="rv" style="--d:1">El detector de espías: desigualdad CHSH</h2>
+
+        <div class="math-board rv" style="--d:2;padding:11px 22px">
+          <div class="eq-main" style="font-size:29px">
+            <span>S</span>
+            <span>=</span>
+            <span class="ca">E(a₁, b₁)</span>
+            <span>−</span>
+            <span class="cb">E(a₁, b₃)</span>
+            <span>+</span>
+            <span class="ca">E(a₃, b₁)</span>
+            <span>+</span>
+            <span class="ca">E(a₃, b₃)</span>
+          </div>
+        </div>
+
+        <div class="g6 rv" style="--d:3">
+          <div id="gw6"></div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="o6" id="o6"></div>
+            <div class="verd" id="v6"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 7: ¿QUÉ OCURRE SI EVE INTENTA ESPIAR?
+           ================================================================== -->
+      <section class="s" id="s7">
+        <div class="row rv" style="justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="kicker">04 · Detección de Intrusiones</div>
+            <h2>¿Qué ocurre si Eve intenta espiar?</h2>
+          </div>
+          <div class="row">
+            <button class="btn ok-on" id="bC">Canal limpio</button>
+            <button class="btn" id="bV">Activar espía (Eve)</button>
+          </div>
+        </div>
+
+        <div class="st4 rv" style="--d:1" id="st7">
+          <div><i>1</i>Intercepta y mide</div>
+          <div><i>2</i>Rompe entrelazamiento</div>
+          <div><i>3</i>Reenvía estado clásico</div>
+          <div><i>4</i>|S| cae por debajo de 2</div>
+        </div>
+
+        <div class="g6 rv" style="--d:2">
+          <div style="background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:14px">
+            <svg id="sc7" viewBox="0 0 640 265" style="width:100%"></svg>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div id="gw7"></div>
+            <div class="verd" id="v7"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 8: SEGURIDAD INDEPENDIENTE Y SATÉLITE MICIUS
+           ================================================================== -->
+      <section class="s" id="s8">
+        <div class="kicker rv">05 · Impacto Tecnológico y Caso Real</div>
+        <h2 class="rv" style="--d:1">Sin confiar en la fuente: satélite Micius</h2>
+
+        <div class="g8 rv" style="--d:2">
+          <div class="cmp8">
+            <div style="border-color:rgba(255,255,255,.16)">
+              <span class="pill-tag mu" style="align-self:flex-start">Protocolo BB84</span>
+              <strong style="font-size:21px;color:var(--mu)">Requiere confiar en el emisor</strong>
+              <span style="font-size:15.5px;color:var(--dim);line-height:1.45">
+                Si el fabricante manipula la fuente de fotones, la seguridad queda comprometida.
+              </span>
+            </div>
+
+            <div style="border-color:rgba(94,224,160,.45);background:linear-gradient(145deg,rgba(94,224,160,.12),rgba(13,20,38,.9))">
+              <span class="pill-tag cok" style="align-self:flex-start">Protocolo E91 · Device-Independent</span>
+              <strong style="font-size:21px;color:var(--ok)">Verificado por el test CHSH &gt; 2</strong>
+              <span style="font-size:15.5px;color:var(--mu);line-height:1.45">
+                Aunque la fuente perteneciera a Eve, sin entrelazamiento real jamás superaría el límite clásico de 2.
+              </span>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-panel);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;align-items:center">
+            <svg id="sc8" viewBox="0 0 620 400" style="width:100%"></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           DIAPOSITIVA 9: CONCLUSIONES Y LIMITACIONES
+           ================================================================== -->
+      <section class="s" id="s9">
+        <div class="kicker rv">06 · Cierre</div>
+        <h2 class="rv" style="--d:1">Conclusiones y limitaciones</h2>
+
+        <div class="g9 rv" style="--d:2">
+          <div>
+            <svg viewBox="0 0 120 84">
+              <ellipse cx="60" cy="74" rx="34" ry="5" fill="#000" opacity=".4"/>
+              <g transform="translate(60 40)">
+                <circle r="32" fill="url(#glow)"/>
+                <ellipse rx="36" ry="12" transform="rotate(30)" fill="none" stroke="#6CB8FF" stroke-width="2.5"/>
+                <ellipse rx="36" ry="12" transform="rotate(-30)" fill="none" stroke="#B79CFF" stroke-width="2.5"/>
+                <ellipse rx="36" ry="12" transform="rotate(90)" fill="none" stroke="#5EE0A0" stroke-width="2.5"/>
+                <circle r="14" fill="url(#dark)" stroke="url(#metal)" stroke-width="3"/>
+                <circle r="7" fill="url(#lens)"/>
+                <circle cx="-2" cy="-2" r="2.5" fill="#fff"/>
+              </g>
+            </svg>
+            <b>La seguridad es física, no matemática</b>
+            <span>No depende de la potencia de cálculo de los ordenadores cuánticos.</span>
+          </div>
+
+          <div>
+            <svg viewBox="0 0 120 84">
+              <ellipse cx="60" cy="75" rx="44" ry="5" fill="#000" opacity=".4"/>
+              <path d="M12 68A48 48 0 0 1 108 68" fill="none" stroke="url(#metal)" stroke-width="13" stroke-linecap="round"/>
+              <path d="M14 68A46 46 0 0 1 78 16" fill="none" stroke="#FF5C61" stroke-width="7.5" stroke-linecap="round"/>
+              <path d="M78 16A46 46 0 0 1 106 68" fill="none" stroke="#5EE0A0" stroke-width="7.5" stroke-linecap="round"/>
+              <path d="M78 16L73 25" stroke="#fff" stroke-width="2.2"/>
+              <path d="M60 68L95 35" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="60" cy="68" r="8" fill="url(#metal)" stroke="#111624" stroke-width="1.5"/>
+            </svg>
+            <b>El test CHSH es un juez imparcial</b>
+            <span>Si |S| supera 2, el entrelazamiento está intacto; si no, se descarta la clave.</span>
+          </div>
+
+          <div>
+            <svg viewBox="0 0 120 84">
+              <ellipse cx="60" cy="78" rx="30" ry="5" fill="#000" opacity=".4"/>
+              <path d="M60 5 94 20V46C94 64 74 76 60 80 46 76 26 64 26 46V20z" fill="url(#metal)"/>
+              <path d="M60 9 90 22V46C90 61 72 72 60 76 48 72 30 61 30 46V22z" fill="url(#shield)" stroke="#9DF5CB" stroke-width="1.5"/>
+              <path d="M60 9 90 22V46C90 61 72 72 60 76z" fill="#fff" opacity=".12"/>
+              <path d="M44 43 55 54 76 32" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <b>No hace falta confiar en la fuente</b>
+            <span>La verificación no depende de quién construyó el emisor.</span>
+          </div>
+        </div>
+
+        <div class="lim9 rv" style="--d:3">
+          <div>
+            <svg viewBox="0 0 48 48">
+              <polygon points="24,6 40,24 24,42 8,24" fill="rgba(183,156,255,.2)" stroke="#B79CFF" stroke-width="2"/>
+              <line x1="4" y1="24" x2="44" y2="24" stroke="#6CB8FF" stroke-width="2" stroke-dasharray="3 3"/>
+            </svg>
+            <span><strong style="color:var(--ink)">Fuentes EPR:</strong> baja tasa de generación de pares entrelazados.</span>
+          </div>
+          <div>
+            <svg viewBox="0 0 48 48">
+              <path d="M6 32Q24 10 42 32" fill="none" stroke="#F4B550" stroke-width="3" stroke-dasharray="5 3"/>
+              <circle cx="38" cy="28" r="4" fill="#FF5C61"/>
+            </svg>
+            <span><strong style="color:var(--ink)">Fibra óptica:</strong> atenuación y pérdida de fotones a larga distancia.</span>
+          </div>
+          <div>
+            <svg viewBox="0 0 48 48">
+              <rect x="10" y="12" width="28" height="24" rx="6" fill="url(#dark)" stroke="url(#metal)" stroke-width="2.5"/>
+              <circle cx="24" cy="24" r="7" fill="url(#lens)"/>
+            </svg>
+            <span><strong style="color:var(--ink)">Detectores SPAD:</strong> ruido oscuro y eficiencia cuántica limitada.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notas del orador (tecla N o botón Notas) -->
+      <div id="notes" role="region" aria-label="Notas del orador"></div>
+
+      <!-- Controles de navegación flotantes -->
+      <div id="nav">
+        <button id="bsnd" aria-label="Sonido óptico" title="Activar/silenciar efectos de sonido">🔇</button>
+        <button id="bfs" aria-label="Pantalla completa" title="Pantalla completa (F)">⛶</button>
+        <button id="bn" aria-label="Notas del orador" title="Notas del orador (N)">Notas</button>
+        <button id="pv" aria-label="Anterior">‹</button>
+        <button id="nx" aria-label="Siguiente">›</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = s => document.querySelector(s);
+      const $$ = s => [...document.querySelectorAll(s)];
+      const F = (n, d = 0) => n.toFixed(d).replace('.', ',');
+      const a = '#6CB8FF', b = '#F4B550', e = '#FF5C61', q = '#B79CFF', ok = '#5EE0A0';
+
+      /* ---------- ESCALADO RESPONSIVE DEL LIENZO 1280x720 ---------- */
+      const deckEl = $('#deck');
+      function fitDeck() {
+        const pad = 16;
+        const sx = (window.innerWidth - pad) / 1280;
+        const sy = (window.innerHeight - pad) / 720;
+        const sc = Math.min(sx, sy, 1.35);
+        deckEl.style.transform = `scale(${sc.toFixed(4)})`;
+      }
+      window.addEventListener('resize', fitDeck);
+      fitDeck();
+
+      /* ---------- SINTETIZADOR ACÚSTICO OPCIONAL (WEB AUDIO API) ---------- */
+      let snd = false, actx = null;
+      function sfx(type) {
+        if (!snd) return;
+        try {
+          if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+          if (actx.state === 'suspended') actx.resume();
+          const now = actx.currentTime;
+          const play = (freq, dur, gainVal = 0.08, wave = 'sine', delay = 0) => {
+            const osc = actx.createOscillator(), g = actx.createGain();
+            osc.type = wave;
+            osc.frequency.setValueAtTime(freq, now + delay);
+            g.gain.setValueAtTime(0.0001, now + delay);
+            g.gain.exponentialRampToValueAtTime(gainVal, now + delay + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
+            osc.connect(g);
+            g.connect(actx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + dur + 0.02);
+          };
+          if (type === 'tick') play(680, 0.07, 0.045, 'triangle');
+          else if (type === 'coin') { play(920, 0.22, 0.07, 'sine'); play(1380, 0.3, 0.05, 'sine', 0.06); }
+          else if (type === 'ok') { play(523.25, 0.35, 0.06, 'sine'); play(659.25, 0.4, 0.06, 'sine', 0.07); play(783.99, 0.5, 0.06, 'sine', 0.14); }
+          else if (type === 'alarm') { play(190, 0.42, 0.09, 'sawtooth'); play(145, 0.52, 0.08, 'sawtooth', 0.16); }
+        } catch (_) {}
+      }
+      $('#bsnd').onclick = () => {
+        snd = !snd;
+        $('#bsnd').textContent = snd ? '🔊' : '🔇';
+        if (snd) sfx('tick');
+      };
+
+      /* ---------- PIEZAS REALISTAS SVG ---------- */
+      const T = (x, y, txt, fill = '#F4F7FC', sz = 16, fw = 700, anchor = 'middle') =>
+        `<text x="${x}" y="${y}" fill="${fill}" font-size="${sz}" font-weight="${fw}" text-anchor="${anchor}">${txt}</text>`;
+
+      const B = (x1, y1, x2, y2, c) =>
+        `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="6" stroke-opacity=".22" filter="url(#bl)"/>
+         <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.4" stroke-opacity=".75"/>`;
+
+      const P = (d, c, dur = 2.2, begin = 0) =>
+        `<g>
+          <circle r="7" fill="${c}" opacity=".35" filter="url(#bl2)">
+            <animateMotion path="${d}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
+          </circle>
+          <circle r="4" fill="#FFFFFF">
+            <animateMotion path="${d}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
+          </circle>
+        </g>`;
+
+      const S = (x, y, sc = 1) =>
+        `<g transform="translate(${x} ${y}) scale(${sc})">
+          <circle r="54" fill="url(#glow)"/>
+          <polygon points="0,-32 32,0 0,32 -32,0" fill="url(#dark)" stroke="url(#metal)" stroke-width="3"/>
+          <polygon points="0,-21 21,0 0,21 -21,0" fill="rgba(183,156,255,.22)" stroke="${q}" stroke-width="1.8"/>
+          <circle r="7" fill="#FFFFFF"/>
+          ${T(0, 5, '|Ψ⁻⟩', '#FFFFFF', 13, 900)}
+        </g>`;
+
+      const D = (x, y, c, dir = 1, sc = 1) =>
+        `<g transform="translate(${x} ${y}) scale(${sc * dir} ${sc})">
+          <rect x="-42" y="-32" width="76" height="64" rx="14" fill="url(#dark)" stroke="url(#metal)" stroke-width="3.2"/>
+          <rect x="26" y="-22" width="16" height="44" rx="5" fill="url(#metal)"/>
+          <ellipse cx="42" cy="0" rx="5" ry="20" fill="url(#lens)"/>
+          <circle cx="-12" cy="0" r="13" fill="rgba(255,255,255,.06)" stroke="${c}" stroke-width="2.2"/>
+          <circle cx="-12" cy="0" r="5" fill="${c}"/>
+        </g>`;
+
+      const E = (x, y, sc = 1) =>
+        `<g transform="translate(${x} ${y}) scale(${sc})">
+          <rect x="-48" y="-26" width="96" height="52" rx="13" fill="#240C14" stroke="${e}" stroke-width="2.6"/>
+          <path d="M-22 -4Q0 -20 22 -4Q0 12 -22 -4Z" fill="none" stroke="${e}" stroke-width="2.4"/>
+          <circle cx="0" cy="-4" r="5" fill="${e}"/>
+          ${T(0, 18, 'EVE', e, 12.5, 900)}
+        </g>`;
+
+      function sectorPath(deg, r = 46) {
+        if (deg <= 0) return '';
+        const rad = (deg * Math.PI) / 180;
+        const x = r * Math.sin(rad);
+        const y = -r * Math.cos(rad);
+        return `M 0 0 L 0 ${-r} A ${r} ${r} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;
+      }
+
+      const PO = (x, y, c, idNeedle, idSec) =>
+        `<g transform="translate(${x} ${y})">
+          <circle r="54" fill="url(#dark)" stroke="url(#metal)" stroke-width="3.5"/>
+          <circle r="46" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+          ${[0, 45, 90, 135].map(r => `<path d="M0-42v-7" stroke="rgba(255,255,255,.55)" stroke-width="1.8" transform="rotate(${r})"/>`).join('')}
+          <path id="${idSec}" fill="${c}" fill-opacity="0.24"/>
+          <g id="${idNeedle}" style="transition:transform .7s cubic-bezier(.3,1.35,.4,1)">
+            <line x1="0" y1="36" x2="0" y2="-40" stroke="${c}" stroke-width="3.6" stroke-linecap="round"/>
+            <polygon points="0,-46 -6,-34 6,-34" fill="${c}"/>
+          </g>
+          <circle r="5" fill="#FFFFFF"/>
+        </g>`;
+
+      /* ---------- DIAPOSITIVA 1: PORTADA ---------- */
+      $('#cover').innerHTML =
+        `<defs>
+          <linearGradient id="radarGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="${e}" stop-opacity="0.34"/>
+            <stop offset="1" stop-color="${e}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M205 88Q568-22 931 88" fill="none" stroke="${q}" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round" opacity=".85"/>
+        ${T(568, 22, 'Enlace cuántico no local · |Ψ⁻⟩', q, 14.5, 700)}
+        ${B(568, 140, 212, 140, a)}
+        ${B(568, 140, 924, 140, b)}
+        <polygon points="790,260 742,140 838,140" fill="url(#radarGrad)">
+          <animate attributeName="opacity" values="0.2;0.88;0.2" dur="2.2s" begin="0.8s" repeatCount="indefinite"/>
+        </polygon>
+        ${D(150, 140, a, 1, 1.06)}
+        ${D(986, 140, b, -1, 1.06)}
+        ${S(568, 140, 1.06)}
+        ${P('M568 140H212', a, 2.2, 0)}
+        ${P('M568 140H924', b, 2.2, 0)}
+        ${P('M568 140H212', a, 2.2, 1.1)}
+        ${P('M568 140H924', b, 2.2, 1.1)}
+        <path d="M790 232V150" stroke="${e}" stroke-width="2.4" stroke-dasharray="5 6"/>
+        <circle cx="790" cy="140" r="14" fill="rgba(255,92,97,.15)" stroke="${e}" stroke-width="2.2" stroke-dasharray="3 4"/>
+        <circle cx="790" cy="140" r="14" fill="none" stroke="${e}" stroke-width="2.5" opacity="0">
+          <animate attributeName="r" values="12;30" dur="1.1s" begin="1.37s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.9;0" dur="1.1s" begin="1.37s" repeatCount="indefinite"/>
+        </circle>
+        ${E(790, 282, .95)}
+        ${T(150, 232, 'Alice · Detector A', a, 20, 800)}
+        ${T(986, 232, 'Bob · Detector B', b, 20, 800)}
+        ${T(568, 232, 'Fuente de pares entrelazados', q, 17, 700)}
+        ${T(790, 348, 'Eve · Interceptación', e, 18, 800)}`;
+
+      /* ---------- DIAPOSITIVA 2: BB84 VS E91 ---------- */
+      $('#sc2').innerHTML =
+        `<g id="gbb84" style="opacity:0;transition:opacity .35s ease">
+          ${B(180, 68, 880, 68, a)}
+          ${D(130, 68, a, 1, .9)}
+          ${D(930, 68, b, -1, .9)}
+          ${P('M180 68H880', a, 2.4)}
+          ${P('M180 68H880', a, 2.4, 1.2)}
+          ${T(130, 134, 'Alice (Emisor)', a, 16, 800)}
+          ${T(930, 134, 'Bob (Receptor)', b, 16, 800)}
+          ${T(530, 42, 'Envío directo de fotones polarizados →', a, 15, 700)}
+        </g>
+        <g id="ge91" style="opacity:1;transition:opacity .35s ease">
+          ${B(530, 68, 180, 68, a)}
+          ${B(530, 68, 880, 68, b)}
+          ${D(130, 68, a, 1, .9)}
+          ${D(930, 68, b, -1, .9)}
+          ${S(530, 68, .86)}
+          ${P('M530 68H180', a, 2.1)}
+          ${P('M530 68H880', b, 2.1)}
+          ${T(130, 134, 'Alice', a, 16, 800)}
+          ${T(530, 134, 'Fuente central EPR', q, 15, 800)}
+          ${T(930, 134, 'Bob', b, 16, 800)}
+        </g>`;
+
+      function m2(m) {
+        $$('#seg2 button').forEach(x => x.classList.toggle('on', x.dataset.m == m));
+        $('#gbb84').style.opacity = m == 'bb84' ? '1' : '0';
+        $('#ge91').style.opacity = m == 'e91' ? '1' : '0';
+        $('#cap2').innerHTML = m == 'bb84'
+          ? '<b class="ca">BB84:</b> Alice prepara y envía fotones hacia Bob. Es necesario confiar en la fuente emisora.'
+          : '<b class="cok">E91:</b> Una fuente central envía pares entrelazados a ambos. La clave nace al medir y se valida con Bell.';
+      }
+      $('#seg2').onclick = ev => { if (ev.target.dataset.m) { sfx('tick'); m2(ev.target.dataset.m); } };
+      m2('e91');
+
+      /* ---------- DIAPOSITIVA 3: EINSTEIN VS CUÁNTICA ---------- */
+      let mode = 'e', op = false, meas = false, spin = true, ang = 0;
+      const cA = $('#cA'), cB = $('#cB');
+
+      const X = (x, c, f, n) =>
+        `<g class="card-box-hover" transform="translate(${x} 152)">
+          ${T(0, -120, n, c, 18, 800)}
+          <rect x="-82" y="-36" width="164" height="106" rx="14" fill="url(#dark)" stroke="${c}" stroke-width="2.6"/>
+          ${op
+            ? `<path d="M-86-36L-108-78H58L82-36Z" fill="rgba(255,255,255,.08)" stroke="${c}" stroke-width="2"/>
+               <g transform="translate(0 18) scale(${f} 1)">
+                 <path d="M-18 28V-6c0-7 7-7 7 0V6V-18c0-7 7-7 7 0V4V-20c0-7 7-7 7 0V4V-13c0-7 7-7 7 0V10L20 1c4-4 10 2 5 7L12 28Z" fill="${c}"/>
+               </g>
+               ${T(0, 96, f > 0 ? 'Guante izquierdo' : 'Guante derecho', c, 15.5, 800)}`
+            : `<rect x="-88" y="-52" width="176" height="20" rx="6" fill="url(#metal)"/>
+               ${T(0, 26, '?', c, 36, 900)}
+               ${T(0, 96, 'Caja cerrada (predeterminado)', '#C2CEE3', 14.5, 600)}`
+          }
+        </g>`;
+
+      function r3() {
+        if (mode == 'e') {
+          $('#einst').classList.remove('hide');
+          $('#quant').classList.add('hide');
+          $('#einst').innerHTML =
+            `<line x1="460" y1="24" x2="460" y2="255" stroke="rgba(255,255,255,.15)" stroke-width="2" stroke-dasharray="6 6"/>
+             ${X(240, a, 1, 'Caja de Alice')}
+             ${X(680, b, -1, 'Caja de Bob')}`;
+          $('#act').textContent = op ? 'Cerrar cajas' : 'Abrir cajas';
+          $('#cap3').innerHTML = '<b class="ca">Einstein (realismo local):</b> el resultado ya estaba guardado dentro de cada caja antes de abrirlas.';
+        } else {
+          $('#einst').classList.add('hide');
+          $('#quant').classList.remove('hide');
+          $('#act').textContent = meas ? 'Volver a girar' : 'Medir monedas';
+          $('#cap3').innerHTML = '<b class="cq">Cuántica:</b> antes de medir no hay valor definido; al detener una moneda, la otra colapsa al instante en el opuesto.';
+        }
+      }
+
+      (function loop() {
+        if (spin) {
+          ang = (ang + 6) % 360;
+          cA.style.transform = `rotateY(${ang}deg)`;
+          cB.style.transform = `rotateY(${-ang}deg)`;
+        }
+        requestAnimationFrame(loop);
+      })();
+
+      function unmeas() {
+        meas = false;
+        [cA, cB].forEach(c => c.classList.remove('set'));
+        $('#sA').classList.remove('landed');
+        $('#sB').classList.remove('landed');
+        ang = 0;
+        spin = true;
+        $('#rA').textContent = 'Girando...';
+        $('#rB').textContent = 'Girando...';
+        $('#rA').classList.remove('on');
+        $('#rB').classList.remove('on');
+        $('#wv').setAttribute('stroke', q);
+        $('#cPulse').setAttribute('opacity', '0');
+      }
+
+      $('#seg3').onclick = ev => {
+        if (!ev.target.dataset.m) return;
+        mode = ev.target.dataset.m;
+        $$('#seg3 button').forEach(x => x.classList.toggle('on', x.dataset.m == mode));
+        op = false;
+        unmeas();
+        sfx('tick');
+        r3();
+      };
+
+      function triggerAction3() {
+        if (mode == 'e') {
+          op = !op;
+          sfx('tick');
+        } else if (!meas) {
+          const r = Math.random() < 0.5 ? 0 : 1;
+          const base = Math.ceil(ang / 360) * 360 + 360;
+          spin = false;
+          meas = true;
+          sfx('coin');
+          [cA, cB].forEach(c => c.classList.add('set'));
+          $('#sA').classList.add('landed');
+          $('#sB').classList.add('landed');
+          cA.style.transform = `rotateY(${base + (r ? 180 : 0)}deg)`;
+          cB.style.transform = `rotateY(${-base + (r ? 0 : 180)}deg)`;
+          $('#rA').textContent = `Resultado: ${r} (${r ? 'Oro' : 'Plata'})`;
+          $('#rB').textContent = `Resultado: ${1 - r} (${1 - r ? 'Oro' : 'Plata'})`;
+          $('#rA').classList.add('on');
+          $('#rB').classList.add('on');
+          $('#wv').setAttribute('stroke', ok);
+
+          const cp = $('#cPulse');
+          cp.setAttribute('opacity', '1');
+          const t0 = performance.now();
+          (function animPulse(t) {
+            const p = Math.min(1, (t - t0) / 550);
+            cp.setAttribute('cx', (p * 320).toFixed(1));
+            cp.setAttribute('opacity', (1 - p * 0.85).toFixed(2));
+            if (p < 1) requestAnimationFrame(animPulse);
+            else cp.setAttribute('opacity', '0');
+          })(t0);
+        } else {
+          unmeas();
+          sfx('tick');
+        }
+        r3();
+      }
+      $('#act').onclick = triggerAction3;
+      $('#einst').onclick = triggerAction3;
+      cA.onclick = triggerAction3;
+      cB.onclick = triggerAction3;
+      r3();
+
+      /* ---------- DIAPOSITIVA 4: EXPLORADOR DE ÁNGULOS ---------- */
+      let sa = 0, sb = 45;
+      const AA = [0, 45, 90], BB = [45, 90, 135];
+      const cat = (x, y) => x == y ? 'k' : ((x == 0 || x == 90) && (y == 45 || y == 135)) ? 't' : 'u';
+      const sub = ['₁', '₂', '₃'];
+
+      $('#sc4').innerHTML =
+        `${B(340, 96, 174, 96, a)}
+         ${B(340, 96, 506, 96, b)}
+         ${PO(98, 96, a, 'pA', 'secA')}
+         ${PO(582, 96, b, 'pB', 'secB')}
+         ${S(340, 96, .76)}
+         ${P('M340 96H174', a, 2.2)}
+         ${P('M340 96H506', b, 2.2)}
+         <g id="tA"></g><g id="tB"></g>
+         <g transform="translate(340 206)">
+           <circle r="44" fill="rgba(6,10,22,0.88)" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+           ${[0, 45, 90, 135].map(r => `<path d="M0-38v-6" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" transform="rotate(${r})"/>`).join('')}
+           <path id="cmpSec" fill="${q}" fill-opacity="0.28" stroke="${q}" stroke-width="1.2"/>
+           <g id="cmpA" style="transition:transform .7s cubic-bezier(.3,1.35,.4,1)"><line x1="0" y1="0" x2="0" y2="-36" stroke="${a}" stroke-width="3" stroke-linecap="round"/></g>
+           <g id="cmpB" style="transition:transform .7s cubic-bezier(.3,1.35,.4,1)"><line x1="0" y1="0" x2="0" y2="-36" stroke="${b}" stroke-width="3" stroke-linecap="round"/></g>
+           <circle r="4" fill="#fff"/>
+           <text id="cmpLbl" x="62" y="5" fill="#C2CEE3" font-size="13.5" font-weight="700" text-anchor="start">θ = 45°</text>
+         </g>`;
+
+      $('#sa').innerHTML = AA.map((v, i) => `<button data-v="${v}">a${sub[i]} = ${v}°</button>`).join('');
+      $('#sb').innerHTML = BB.map((v, i) => `<button data-v="${v}">b${sub[i]} = ${v}°</button>`).join('');
+      $('#mx').innerHTML = '<div></div>' +
+        BB.map((v, i) => `<div class="h">b${sub[i]} ${v}°</div>`).join('') +
+        AA.map((x, i) => `<div class="h">a${sub[i]} ${x}°</div>` +
+          BB.map(y => {
+            const c = cat(x, y);
+            return `<button class="${c}" data-a="${x}" data-b="${y}">${c == 'k' ? 'Clave' : c == 't' ? 'Test' : '—'}</button>`;
+          }).join('')
+        ).join('');
+
+      const EC_HTML = {
+        0: '−1',
+        45: '−<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span> <small class="mu">(−0,71)</small>',
+        90: '0',
+        135: '+<span class="frac"><span class="num"><span class="sqrt"><span>2</span></span></span><span class="den">2</span></span> <small class="mu">(+0,71)</small>'
+      };
+
+      const V4 = {
+        k: [ok, '<b class="cok">Clave secreta.</b> Ángulos iguales: los resultados son opuestos. Bob invierte su bit y ambos obtienen la misma clave.'],
+        t: [q, '<b class="cq">Test de seguridad CHSH.</b> Ángulos distintos: se hacen públicos los resultados para calcular E y verificar Bell.'],
+        u: ['#8D9CB8', '<b>Sin uso.</b> Esta pareja no entra en la clave ni en los cuatro términos de CHSH.']
+      };
+
+      function cmpSectorPath(a1Deg, a2Deg, r = 38) {
+        const minD = Math.min(a1Deg, a2Deg), maxD = Math.max(a1Deg, a2Deg);
+        if (maxD - minD <= 0) return '';
+        const r1 = (minD * Math.PI) / 180, r2 = (maxD * Math.PI) / 180;
+        const x1 = r * Math.sin(r1), y1 = -r * Math.cos(r1);
+        const x2 = r * Math.sin(r2), y2 = -r * Math.cos(r2);
+        return `M 0 0 L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+      }
+
+      function u4() {
+        $('#pA').style.transform = `rotate(${sa}deg)`;
+        $('#pB').style.transform = `rotate(${sb}deg)`;
+        $('#secA').setAttribute('d', sectorPath(sa));
+        $('#secB').setAttribute('d', sectorPath(sb));
+        $('#cmpA').style.transform = `rotate(${sa}deg)`;
+        $('#cmpB').style.transform = `rotate(${sb}deg)`;
+        $('#cmpSec').setAttribute('d', cmpSectorPath(sa, sb));
+        const d = Math.abs(sa - sb), c = cat(sa, sb);
+        const cmpLbl = $('#cmpLbl');
+        if (d === 0) {
+          cmpLbl.textContent = 'θ = 0° · Alineados ✓';
+          cmpLbl.setAttribute('fill', ok);
+        } else {
+          cmpLbl.textContent = `θ = ${d}°`;
+          cmpLbl.setAttribute('fill', c === 't' ? q : '#C2CEE3');
+        }
+        $('#tA').innerHTML = T(98, 188, 'Alice · ' + sa + '°', a, 17, 800);
+        $('#tB').innerHTML = T(582, 188, 'Bob · ' + sb + '°', b, 17, 800);
+        $$('#sa button').forEach(x => x.classList.toggle('on', +x.dataset.v == sa));
+        $$('#sb button').forEach(x => x.classList.toggle('on', +x.dataset.v == sb));
+        $$('#mx button').forEach(x => x.classList.toggle('on', +x.dataset.a == sa && +x.dataset.b == sb));
+        $('#th').textContent = d + '°';
+        $('#ec').innerHTML = EC_HTML[d];
+        $('#v4').style.borderColor = V4[c][0];
+        $('#v4').innerHTML = V4[c][1];
+      }
+      $('#sa').onclick = ev => { if (ev.target.dataset.v) { sa = +ev.target.dataset.v; sfx('tick'); u4(); } };
+      $('#sb').onclick = ev => { if (ev.target.dataset.v) { sb = +ev.target.dataset.v; sfx('tick'); u4(); } };
+      $('#mx').onclick = ev => { const t = ev.target.closest('button'); if (t) { sa = +t.dataset.a; sb = +t.dataset.b; sfx('tick'); u4(); } };
+      u4();
+
+      /* ---------- DIAPOSITIVA 5: SIMULADOR DE RONDA ---------- */
+      const CP = [[0, 45, 1, -1], [45, 45, 1, -1], [90, 135, -1, -1], [90, 90, -1, 1], [45, 135, 1, 1], [45, 45, -1, 1]];
+      const sg = v => v > 0 ? '+1' : '−1';
+
+      function tbl(Ps) {
+        let kb = '', nKey = 0, nTest = 0, nDisc = 0;
+        $('#tb').innerHTML = Ps.map(([x, y, ra, rb], i) => {
+          const m = x == y, t = (x == 0 || x == 90) && (y == 45 || y == 135);
+          let d, bt;
+          if (m) {
+            nKey++;
+            const bitA = ra > 0 ? 1 : 0;
+            const bitBRaw = rb > 0 ? 1 : 0;
+            const bitBInv = 1 - bitBRaw;
+            kb += bitA;
+            d = '<span class="chip k">Clave</span>';
+            bt = `Alice <b>${bitA}</b> · Bob ${bitBRaw} ⇄ <b class="cok">${bitBInv}</b>`;
+          } else if (t) {
+            nTest++;
+            d = '<span class="chip t">Test CHSH</span>';
+            bt = '<em>resultados públicos</em>';
+          } else {
+            nDisc++;
+            d = '<span class="chip u">Descartado</span>';
+            bt = '<em>no se usa</em>';
+          }
+          return `<tr class="${m ? 'rk' : t ? 'rt' : 'ru'}">
+            <td>${i + 1}</td>
+            <td class="ca">${x}°</td>
+            <td class="cb">${y}°</td>
+            <td>${sg(ra)}</td>
+            <td>${sg(rb)}</td>
+            <td>${d}</td>
+            <td>${bt}</td>
+          </tr>`;
+        }).join('');
+        $('#key').textContent = kb || '—';
+        $('#roundStats').textContent = `${nKey} clave · ${nTest} test · ${nDisc} sin uso`;
+      }
+      $('#bRn').onclick = () => {
+        sfx('tick');
+        tbl(Array.from({ length: 6 }, () => {
+          const x = AA[Math.random() * 3 | 0];
+          const y = BB[Math.random() * 3 | 0];
+          const ra = Math.random() < 0.5 ? 1 : -1;
+          const po = Math.cos(Math.abs(x - y) * Math.PI / 360) ** 2;
+          return [x, y, ra, Math.random() < po ? -ra : ra];
+        }));
+      };
+      $('#bRs').onclick = () => { sfx('tick'); tbl(CP); };
+      tbl(CP);
+
+      /* ---------- MEDIDOR SEMICIRCULAR CHSH (DIAPOSITIVAS 6 Y 7) ---------- */
+      const GX = 280, GY = 250, GR = 200;
+      const pt = (r, v) => { const t = Math.PI * (1 - v / 3); return [GX + r * Math.cos(t), GY - r * Math.sin(t)]; };
+      const arc = (v1, v2, r) => { const [p, qq] = pt(r, v1), [s, t] = pt(r, v2); return `M${p} ${qq}A${r} ${r} 0 0 1 ${s} ${t}`; };
+
+      const subTicks = Array.from({ length: 16 }, (_, i) => +(i * 0.2).toFixed(1))
+        .filter(v => ![0, 1, 2, 3].includes(v))
+        .map(v => {
+          const [x1, y1] = pt(GR + 14, v), [x2, y2] = pt(GR + 21, v);
+          return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="rgba(255,255,255,0.28)" stroke-width="1.3"/>`;
+        }).join('');
+
+      const [lx1, ly1] = pt(GR - 16, 2), [lx2, ly2] = pt(GR + 22, 2);
+      const [qx1, qy1] = pt(GR - 14, 2.828), [qx2, qy2] = pt(GR + 24, 2.828);
+
+      const gauge = id =>
+        `<svg class="gauge" id="${id}" viewBox="0 0 560 322" role="img" aria-label="Medidor del parámetro S">
+          <defs>
+            <linearGradient id="${id}c" x1="0" x2="1"><stop offset="0" stop-color="${e}"/><stop offset="1" stop-color="#FFB45A"/></linearGradient>
+            <linearGradient id="${id}q" x1="0" x2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${ok}"/></linearGradient>
+          </defs>
+          <path id="${id}al" class="gauge-alert" d="${arc(0, 3, GR)}" stroke="${e}" stroke-width="46" fill="none" filter="url(#bl)"/>
+          <path d="${arc(0, 3, GR)}" stroke="rgba(255,255,255,.08)" stroke-width="38" fill="none"/>
+          <path d="${arc(0, 1.985, GR)}" stroke="url(#${id}c)" stroke-width="25" fill="none"/>
+          <path d="${arc(2.015, 3, GR)}" stroke="url(#${id}q)" stroke-width="25" fill="none"/>
+          ${subTicks}
+          <line x1="${lx1}" y1="${ly1}" x2="${lx2}" y2="${ly2}" stroke="#FFFFFF" stroke-width="2.5" stroke-dasharray="3 2"/>
+          <line x1="${qx1}" y1="${qy1}" x2="${qx2}" y2="${qy2}" stroke="${ok}" stroke-width="2.5"/>
+          ${[0, 1, 2, 3].map(v => {
+            const [x1, y1] = pt(GR + 22, v), [x2, y2] = pt(GR + 33, v), [tx, ty] = pt(GR + 50, v);
+            return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="${v == 2 ? '#fff' : '#C2CEE3'}" stroke-width="${v == 2 ? 4 : 2}"/>
+                    ${T(tx, ty + 5, v == 2 ? '2' : v, v == 2 ? '#fff' : '#C2CEE3', v == 2 ? 20 : 16, 700)}`;
+          }).join('')}
+          ${(() => { const [tx, ty] = pt(GR + 48, 2.828); return T(tx - 4, ty + 4, '2√2', ok, 15.5, 800); })()}
+          ${T(...pt(138, .95), 'Clásico o espía', e, 15, 700)}
+          ${T(...pt(138, 2.5), 'Cuántico', ok, 15, 700)}
+          <g class="nd" style="transform-origin:${GX}px ${GY}px;transform:rotate(-90deg)">
+            <path d="M${GX - 7} ${GY}L${GX} ${GY - GR + 28}L${GX + 7} ${GY}z" fill="#fff"/>
+          </g>
+          <circle cx="${GX}" cy="${GY}" r="14" fill="url(#metal)"/>
+          <text class="gn" x="${GX}" y="314" text-anchor="middle">
+            <tspan fill="#C2CEE3" font-size="25">|S| = </tspan>
+            <tspan class="v">0,00</tspan>
+          </text>
+        </svg>`;
+
+      function setG(id, v, c) {
+        const g = $('#' + id), n = g.querySelector('.v'), f = +n.dataset.v || 0, t0 = performance.now();
+        g.querySelector('.nd').style.transform = `rotate(${v / 3 * 180 - 90}deg)`;
+        const alEl = $('#' + id + 'al');
+        if (alEl) alEl.classList.toggle('on', v <= 2);
+        n.dataset.v = v;
+        n.setAttribute('fill', c);
+        (function s(t) {
+          const k = Math.min(1, (t - t0) / 850);
+          const x = f + (v - f) * (1 - (1 - k) ** 3);
+          n.textContent = F(x, 2);
+          if (k < 1) requestAnimationFrame(s);
+        })(t0);
+      }
+
+      $('#gw6').innerHTML = gauge('g6');
+      $('#gw7').innerHTML = gauge('g7');
+
+      const ST = {
+        clean: [2.828, ok, 'Sin espía (ideal)', '2,83', '|S| = 2,83 > 2. El entrelazamiento está intacto: la clave es segura.'],
+        noise: [2.35, '#7FD6FF', 'Con ruido en canal', '2,35', '|S| = 2,35 > 2. Con ruido baja, pero sigue violando Bell: clave aprovechable.'],
+        eve: [1.414, e, 'Con espía (Eve)', '1,41', '|S| = 1,41 ≤ 2. Alarma de espionaje: se descarta la clave y se reinicia.']
+      };
+      $('#o6').innerHTML = Object.entries(ST).map(([k, v]) =>
+        `<button data-k="${k}">${v[2]}<small>S = ${v[3]}</small></button>`
+      ).join('');
+
+      function u6(k, playSnd = false) {
+        $$('#o6 button').forEach(x => x.classList.toggle('on', x.dataset.k == k));
+        const s = ST[k];
+        setG('g6', s[0], s[1]);
+        $('#v6').style.borderColor = s[1];
+        $('#v6').textContent = s[4];
+        if (playSnd) sfx(k === 'eve' ? 'alarm' : 'ok');
+      }
+      $('#o6').onclick = ev => { const t = ev.target.closest('button'); if (t) u6(t.dataset.k, true); };
+      u6('clean', false);
+
+      /* ---------- DIAPOSITIVA 7: SIMULADOR DE ATAQUE EVE ---------- */
+      $('#sc7').innerHTML =
+        `<path id="arc7" d="M84 82Q320-16 556 82" fill="none" stroke="${q}" stroke-width="2.5" stroke-dasharray="6 6"/>
+         ${T(320, 22, 'Enlace entrelazado |Ψ⁻⟩', q, 14, 700)}
+         ${B(320, 118, 128, 118, a)}
+         ${B(320, 118, 512, 118, b)}
+         ${D(84, 118, a, 1, .84)}
+         ${D(556, 118, b, -1, .84)}
+         ${S(320, 118, .82)}
+         ${P('M320 118H128', a, 2.2)}
+         <g id="p7clean">${P('M320 118H512', b, 2.2)}</g>
+         <g id="p7eve" style="display:none">
+           ${P('M320 118H425', b, 1.2)}
+           ${P('M425 118H512', e, 1.0, 0.2)}
+         </g>
+         <g id="ev7" style="opacity:0;transition:opacity .45s ease">
+           <line x1="425" y1="118" x2="512" y2="118" stroke="${e}" stroke-width="4" stroke-dasharray="6 5"/>
+           <circle cx="425" cy="118" r="14" fill="rgba(255,92,97,.22)" stroke="${e}" stroke-width="2.4"/>
+           <line x1="425" y1="132" x2="425" y2="188" stroke="${e}" stroke-width="2.2" stroke-dasharray="4 4"/>
+           ${E(425, 214, .82)}
+         </g>
+         ${T(84, 186, 'Alice', a, 16, 800)}
+         ${T(556, 186, 'Bob', b, 16, 800)}`;
+
+      let tm = [];
+      function step(n) {
+        $$('#st7 > div').forEach((el, i) => el.classList.toggle('on', i < n));
+      }
+
+      function eve(on) {
+        tm.forEach(clearTimeout);
+        tm = [];
+        $('#bC').classList.toggle('ok-on', !on);
+        $('#bV').classList.toggle('ev-on', on);
+        $('#ev7').style.opacity = on ? '1' : '0';
+        $('#p7clean').style.display = on ? 'none' : 'inline';
+        $('#p7eve').style.display = on ? 'inline' : 'none';
+        $('#arc7').setAttribute('stroke', on ? e : q);
+        $('#arc7').setAttribute('stroke-dasharray', on ? '3 10' : '6 6');
+
+        if (!on) {
+          step(0);
+          setG('g7', 2.828, ok);
+          $('#v7').style.borderColor = ok;
+          $('#v7').innerHTML = '<b class="cok">Canal seguro.</b> |S| ≈ 2,83 > 2: nadie midió las partículas.';
+          return;
+        }
+        sfx('tick');
+        step(1);
+        [750, 1500].forEach((t, i) => tm.push(setTimeout(() => step(i + 2), t)));
+        tm.push(setTimeout(() => {
+          step(4);
+          setG('g7', 1.414, e);
+          sfx('alarm');
+          $('#v7').style.borderColor = e;
+          $('#v7').innerHTML = '<b class="ce">Alarma de espionaje.</b> |S| = √2 ≈ 1,41 ≤ 2: Eve queda delatada y se descarta la clave.';
+        }, 2250));
+      }
+      $('#bC').onclick = () => { eve(false); sfx('ok'); };
+      $('#bV').onclick = () => eve(true);
+      eve(false);
+
+      /* ---------- DIAPOSITIVA 8: SATÉLITE MICIUS ---------- */
+      $('#sc8').innerHTML =
+        `<defs>
+          <radialGradient id="earth8" cx="50%" cy="0%" r="90%">
+            <stop offset="0%" stop-color="#1D4ED8" stop-opacity=".75"/>
+            <stop offset="100%" stop-color="#070B16" stop-opacity=".98"/>
+          </radialGradient>
+        </defs>
+        ${[[70, 42], [540, 55], [160, 88], [460, 96], [280, 32]].map(([x, y]) =>
+          `<circle cx="${x}" cy="${y}" r="1.8" fill="#FFF" opacity=".65"/>`
+        ).join('')}
+        ${B(310, 84, 120, 290, a)}
+        ${B(310, 84, 500, 290, b)}
+        ${P('M310 84L120 290', a, 2.5)}
+        ${P('M310 84L500 290', b, 2.5)}
+        <g transform="translate(310 74)">
+          <rect x="-88" y="-13" width="58" height="26" rx="4" fill="rgba(108,184,255,.22)" stroke="${a}" stroke-width="2"/>
+          <line x1="-68" y1="-13" x2="-68" y2="13" stroke="${a}" stroke-width="1.2"/>
+          <line x1="-49" y1="-13" x2="-49" y2="13" stroke="${a}" stroke-width="1.2"/>
+          <rect x="30" y="-13" width="58" height="26" rx="4" fill="rgba(108,184,255,.22)" stroke="${a}" stroke-width="2"/>
+          <line x1="50" y1="-13" x2="50" y2="13" stroke="${a}" stroke-width="1.2"/>
+          <line x1="69" y1="-13" x2="69" y2="13" stroke="${a}" stroke-width="1.2"/>
+          <rect x="-24" y="-20" width="48" height="40" rx="9" fill="url(#dark)" stroke="url(#metal)" stroke-width="2.6"/>
+          <circle r="8" fill="${q}"/>
+          ${T(0, -30, 'Satélite Micius · 2020', '#FFFFFF', 15, 800)}
+        </g>
+        <path d="M18 390Q310 218 602 390V400H18Z" fill="url(#earth8)" stroke="#38BDF8" stroke-width="2.2"/>
+        <g transform="translate(120 290)">
+          <path d="M-18 0Q0-18 18 0" fill="none" stroke="${a}" stroke-width="3"/>
+          <rect x="-12" y="0" width="24" height="14" rx="4" fill="${a}"/>
+          ${T(0, 32, 'Estación A', a, 14, 800)}
+        </g>
+        <g transform="translate(500 290)">
+          <path d="M-18 0Q0-18 18 0" fill="none" stroke="${b}" stroke-width="3"/>
+          <rect x="-12" y="0" width="24" height="14" rx="4" fill="${b}"/>
+          ${T(0, 32, 'Estación B', b, 14, 800)}
+        </g>
+        <path d="M148 304Q310 256 472 304" fill="none" stroke="${ok}" stroke-width="2.2" stroke-dasharray="5 4"/>
+        <rect x="246" y="312" width="128" height="28" rx="14" fill="rgba(7,11,22,.92)" stroke="${ok}" stroke-width="1.8"/>
+        ${T(310, 331, '1.120 km', ok, 15, 800)}`;
+
+      /* ---------- NAVEGACIÓN DE DIAPOSITIVAS Y NOTAS ---------- */
+      const NT = [
+        '1. Portada: Presenta el tema y señala el esquema: Alice, la fuente central de pares entrelazados |Ψ⁻⟩, Bob y Eve acechando en el canal.',
+        '2. Contexto: RSA cae ante Shor. En BB84 Alice envía fotones a Bob; en E91 una fuente central envía pares entrelazados a ambos.',
+        '3. Entrelazamiento: Muestra las cajas de Einstein (valores predeterminados) frente a las monedas cuánticas girando que se definen al medir.',
+        '4. Ángulos: Alice elige {0°, 45°, 90°} y Bob {45°, 90°, 135°}. Ángulos iguales dan clave; cruzados alimentan el test CHSH.',
+        '5. Cribado: Anuncian solo ángulos en público. En ángulos iguales Bob invierte 0 ⇄ 1 para obtener la misma clave secreta que Alice.',
+        '6. Test CHSH: Clásico o espía nunca supera |S| ≤ 2; la mecánica cuántica alcanza 2√2 ≈ 2,83.',
+        '7. Ataque de Eve: Activa a Eve para mostrar cómo rompe el entrelazamiento y hace caer |S| hasta 1,41 ≤ 2.',
+        '8. Micius: En E91 no hace falta confiar en la fuente; demostrado en 2020 a 1.120 km entre estaciones terrestres.',
+        '9. Conclusiones: Seguridad física, juez imparcial CHSH y seguridad independiente del dispositivo.'
+      ];
+
+      const ids = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9'];
+      const TITLES = [
+        '1 · Portada: Protocolo E91',
+        '2 · Del cifrado clásico al E91',
+        '3 · Entrelazamiento y Paradoja EPR',
+        '4 · Tres ángulos para cada lado',
+        '4B · Anexo: Correlación E(aᵢ, bⱼ)',
+        '5 · Paso a paso y cribado',
+        '6 · Detector de espías (CHSH)',
+        '7 · Simulador de ataque de Eve',
+        '8 · Satélite Micius (1.120 km)',
+        '9 · Conclusiones y limitaciones'
+      ];
+      let cur = 0, ax = false;
+
+      $('#jumpMenu').innerHTML = TITLES.map((t, i) => {
+        const isAx = i === 4;
+        const slideIdx = i < 4 ? i : (isAx ? 3 : i - 1);
+        return `<button type="button" data-idx="${slideIdx}" data-ax="${isAx ? 1 : 0}">${t}</button>`;
+      }).join('');
+
+      function show(idx, annex = false) {
+        ax = annex;
+        if (!annex) cur = Math.max(0, Math.min(ids.length - 1, idx));
+        $$('.s').forEach(el => el.classList.remove('on'));
+        $('#' + (annex ? 's4b' : ids[cur])).classList.add('on');
+        $('#bar i').style.width = `${((cur + 1) / ids.length) * 100}%`;
+        $('#num').textContent = annex ? '4B / 9 ▾' : `${cur + 1} / ${ids.length} ▾`;
+        $$('#jumpMenu button').forEach(b => {
+          const match = annex ? b.dataset.ax === '1' : (b.dataset.ax === '0' && +b.dataset.idx === cur);
+          b.classList.toggle('on', match);
+        });
+        $('#jumpMenu').classList.remove('open');
+        $('#pv').disabled = !annex && cur === 0;
+        $('#nx').disabled = !annex && cur === ids.length - 1;
+        $('#notes').textContent = annex
+          ? 'Anexo 4B: Correlación E(aᵢ,bⱼ) = −cos(θₐᵦ). Las cuatro combinaciones cruzadas suman |S| = 2√2 ≈ 2,83.'
+          : NT[cur];
+      }
+
+      $('#num').onclick = ev => {
+        ev.stopPropagation();
+        $('#jumpMenu').classList.toggle('open');
+      };
+      $('#jumpMenu').onclick = ev => {
+        const btn = ev.target.closest('button');
+        if (btn) show(+btn.dataset.idx, btn.dataset.ax === '1');
+      };
+      document.addEventListener('click', ev => {
+        if (!ev.target.closest('#jumpMenu') && ev.target.id !== 'num') {
+          $('#jumpMenu').classList.remove('open');
+        }
+      });
+
+      function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        } else {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      }
+      $('#bfs').onclick = toggleFullScreen;
+
+      $('#pv').onclick = () => ax ? show(3, false) : show(cur - 1);
+      $('#nx').onclick = () => ax ? show(4, false) : show(cur + 1);
+      $('#bAx').onclick = () => show(3, true);
+      $('#bBk').onclick = () => show(3, false);
+      $('#bn').onclick = () => $('#notes').classList.toggle('on');
+
+      document.addEventListener('keydown', ev => {
+        if (ev.key === 'ArrowRight' || ev.key === ' ') {
+          ev.preventDefault();
+          ax ? show(4, false) : show(cur + 1);
+        } else if (ev.key === 'ArrowLeft') {
+          ev.preventDefault();
+          ax ? show(3, false) : show(cur - 1);
+        } else if (ev.key === 'n' || ev.key === 'N') {
+          $('#notes').classList.toggle('on');
+        } else if (ev.key === 'f' || ev.key === 'F') {
+          toggleFullScreen();
+        } else if (ev.key === 'Escape') {
+          if ($('#jumpMenu').classList.contains('open')) $('#jumpMenu').classList.remove('open');
+          else if (ax) show(3, false);
+          else $('#notes').classList.remove('on');
+        } else if (ev.key >= '1' && ev.key <= '9') {
+          show(+ev.key - 1);
+        }
+      });
+
+      let tx = 0;
+      deckEl.addEventListener('touchstart', ev => { tx = ev.changedTouches[0].clientX; }, { passive: true });
+      deckEl.addEventListener('touchend', ev => {
+        const dx = ev.changedTouches[0].clientX - tx;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) ax ? show(4, false) : show(cur + 1);
+          else ax ? show(3, false) : show(cur - 1);
+        }
+      }, { passive: true });
+
+      show(0);
+    })();
+  </script>
+</body>
+</html>
